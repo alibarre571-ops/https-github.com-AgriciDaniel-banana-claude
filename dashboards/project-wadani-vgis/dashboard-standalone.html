@@ -618,7 +618,7 @@
         <label class="field-label">Password</label>
         <input type="password" id="loginPassword" autocomplete="current-password" required />
       </div>
-      <div class="form-hint">Demo credentials — <code>admin / wadani2026</code> (Super Admin) or <code>auditor / laas2026</code> (Field Auditor). This is a client-side demo login only; do not reuse real passwords.</div>
+      <div class="form-hint">Restricted to authorized VGIS administrators. This is a client-side login check — credentials live in this page's source, not a server, so treat it as access gating rather than real security.</div>
       <button type="submit" class="btn-solid" style="width:100%; justify-content:center; margin-top:16px;">Sign In</button>
     </form>
   </div>
@@ -698,8 +698,7 @@ function saveJSON(key, value) {
 
 /* ---------------- Admin accounts (client-side demo auth) ---------------- */
 const ADMINS = [
-  { username: 'admin', password: 'wadani2026', name: 'System Administrator', role: 'Super Admin' },
-  { username: 'auditor', password: 'laas2026', name: 'Field Auditor', role: 'Field Auditor' },
+  { username: 'alibarre', password: '571barre', name: 'Ali Suleiman Ali', role: 'Super Admin' },
 ];
 let adminSession = loadJSON(STORAGE_KEYS.session, null);
 function isAdmin() { return !!adminSession; }

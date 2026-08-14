@@ -127,8 +127,7 @@ function saveJSON(key, value) {
 
 /* ---------------- Admin accounts (client-side demo auth — not real security) ---------------- */
 const ADMINS = [
-  { username: "admin", password: "wadani2026", name: "System Administrator", role: "Super Admin" },
-  { username: "auditor", password: "laas2026", name: "Field Auditor", role: "Field Auditor" },
+  { username: "alibarre", password: "571barre", name: "Ali Suleiman Ali", role: "Super Admin" },
 ];
 
 const SEED_VOLUNTEERS = [
@@ -425,9 +424,8 @@ function LoginModal({ open, onClose, onLogin }) {
             />
           </div>
           <div className="text-[11px] text-gray-500 leading-relaxed">
-            Demo credentials — <code className="text-[#F59E0B]">admin / wadani2026</code> (Super Admin) or{" "}
-            <code className="text-[#F59E0B]">auditor / laas2026</code> (Field Auditor). Client-side demo login only;
-            do not reuse real passwords.
+            Restricted to authorized VGIS administrators. This is a client-side login check — credentials live in
+            this app's source, not a server, so treat it as access gating rather than real security.
           </div>
           <button
             type="submit"

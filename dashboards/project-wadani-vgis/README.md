@@ -53,20 +53,21 @@ registration modal, and the fraud-alert simulator work with zero setup.
 ## Admin login
 
 Both the React component and the standalone HTML file include a client-side
-demo admin login (top-right of the header). Verifying a pending registration
-and marking attendance both require being logged in.
+admin login (top-right of the header). Verifying a pending registration and
+marking attendance both require being logged in.
 
-Demo accounts:
+| Username   | Password    | Role         |
+|------------|-------------|--------------|
+| `alibarre` | `571barre`  | Super Admin  |
 
-| Username  | Password    | Role           |
-|-----------|-------------|----------------|
-| `admin`   | `wadani2026`| Super Admin    |
-| `auditor` | `laas2026`  | Field Auditor  |
-
-This is a **browser-side demo login only** — credentials are hard-coded in
-the client bundle, not checked against a server. It's meant to demonstrate
-the gating UX (who can verify registrations / mark attendance), not to
-provide real authentication. Wire it to a real auth backend before using
+**This is a browser-side login check only — not real security.** The
+username and password above are stored in plain text in the page's JS
+source (both this repo and the compiled bundle anyone downloads), so
+anyone who views source or reads this README can see them. Treat it as UI
+access-gating (who can click "Verify" / mark attendance), never as
+protection for sensitive data. If this dashboard is ever exposed publicly,
+change these credentials and wire the login to a real auth backend before
+using
 this for anything beyond a demo.
 
 ## Data persistence
