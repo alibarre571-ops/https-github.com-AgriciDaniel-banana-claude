@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   Landmark,
   Users,
@@ -35,6 +35,10 @@ import {
   Layers,
   ChevronRight,
   TrendingUp,
+  Calendar,
+  Lock,
+  LogOut,
+  XCircle,
 } from "lucide-react";
 
 /* -------------------------------------------------------------------------
@@ -45,10 +49,13 @@ import {
 const NAV_TABS = [
   { id: "townhall", label: "Diaspora Town Hall", icon: Globe2 },
   { id: "registry", label: "Volunteer Registry", icon: Users },
+  { id: "attendance", label: "Attendance", icon: Calendar },
   { id: "vgis", label: "VGIS Core Calculator", icon: Calculator },
   { id: "projects", label: "Priority Projects", icon: Route },
   { id: "integrity", label: "Integrity & Audit", icon: ShieldAlert },
 ];
+
+const DISTRICTS = ["Laascaanood Town Centre", "Kalabaydh Corridor", "Yagoori", "Xudun Road", "Airport Perimeter", "Other"];
 
 const CATEGORIES = [
   { id: "citizens", label: "Ordinary Citizens", icon: UserCheck },
@@ -85,6 +92,42 @@ function fmtNum(n, digits = 0) {
   return n.toLocaleString("en-US", { maximumFractionDigits: digits });
 }
 
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/* ---------------- Local persistence (browser-only demo storage) ---------------- */
+const STORAGE_KEYS = {
+  volunteers: "wadani_vgis_volunteers_v1",
+  attendance: "wadani_vgis_attendance_v1",
+  session: "wadani_vgis_admin_session_v1",
+};
+
+function loadJSON(key, fallback) {
+  if (typeof window === "undefined") return fallback;
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch (e) {
+    return fallback;
+  }
+}
+
+function saveJSON(key, value) {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {
+    /* storage unavailable */
+  }
+}
+
+/* ---------------- Admin accounts (client-side demo auth — not real security) ---------------- */
+const ADMINS = [
+  { username: "admin", password: "wadani2026", name: "System Administrator", role: "Super Admin" },
+  { username: "auditor", password: "laas2026", name: "Field Auditor", role: "Field Auditor" },
+];
+
 const SEED_VOLUNTEERS = [
   {
     id: "VGIS-LS-2026-0102",
@@ -95,6 +138,10 @@ const SEED_VOLUNTEERS = [
     logHistory: "42 hrs unskilled labor, box-culvert excavation, Kalabaydh corridor",
     valueUSD: 105,
     points: 105,
+    phone: "+252 63 401 1102",
+    district: "Kalabaydh Corridor",
+    status: "Verified",
+    dateRegistered: "2026-01-14",
   },
   {
     id: "VGIS-LS-2026-0087",
@@ -105,6 +152,10 @@ const SEED_VOLUNTEERS = [
     logHistory: "1 Grader logged 60 Hobbs hrs, Kalabaydh corridor DBST works",
     valueUSD: 3900,
     points: 3900,
+    phone: "+252 63 700 0087",
+    district: "Kalabaydh Corridor",
+    status: "Verified",
+    dateRegistered: "2026-01-09",
   },
   {
     id: "VGIS-LS-2026-0451",
@@ -115,6 +166,10 @@ const SEED_VOLUNTEERS = [
     logHistory: "Monthly VGIS pledge, 14 consecutive months, USSD + Swift",
     valueUSD: 1400,
     points: 1400,
+    phone: "+1 416 555 0142",
+    district: "Other",
+    status: "Verified",
+    dateRegistered: "2025-11-02",
   },
   {
     id: "VGIS-LS-2026-0512",
@@ -125,6 +180,10 @@ const SEED_VOLUNTEERS = [
     logHistory: "310 student-hours, interlocking cobblestone paving brigades",
     valueUSD: 775,
     points: 775,
+    phone: "+252 63 402 0512",
+    district: "Laascaanood Town Centre",
+    status: "Verified",
+    dateRegistered: "2026-02-01",
   },
   {
     id: "VGIS-LS-2026-0033",
@@ -135,6 +194,10 @@ const SEED_VOLUNTEERS = [
     logHistory: "220 hrs airport runway leveling design & site supervision",
     valueUSD: 4400,
     points: 4400,
+    phone: "+252 63 400 0033",
+    district: "Airport Perimeter",
+    status: "Verified",
+    dateRegistered: "2025-12-11",
   },
   {
     id: "VGIS-LS-2026-0210",
@@ -145,6 +208,10 @@ const SEED_VOLUNTEERS = [
     logHistory: "6,200L diesel donated, runway rehabilitation fleet",
     valueUSD: 8680,
     points: 8680,
+    phone: "+252 63 700 0210",
+    district: "Airport Perimeter",
+    status: "Verified",
+    dateRegistered: "2026-01-22",
   },
   {
     id: "VGIS-LS-2026-0668",
@@ -155,6 +222,10 @@ const SEED_VOLUNTEERS = [
     logHistory: "18 hrs unskilled labor, security fence trenching",
     valueUSD: 45,
     points: 45,
+    phone: "+252 63 401 0668",
+    district: "Airport Perimeter",
+    status: "Pending Verification",
+    dateRegistered: "2026-03-02",
   },
   {
     id: "VGIS-LS-2026-0729",
@@ -165,6 +236,10 @@ const SEED_VOLUNTEERS = [
     logHistory: "Bulk 1:1 matched sponsorship, solar night-landing lights unit",
     valueUSD: 22000,
     points: 22000,
+    phone: "+47 900 55 214",
+    district: "Other",
+    status: "Verified",
+    dateRegistered: "2025-10-18",
   },
   {
     id: "VGIS-LS-2026-0355",
@@ -175,6 +250,10 @@ const SEED_VOLUNTEERS = [
     logHistory: "Quality assurance inspections, 12 site audits",
     valueUSD: 2640,
     points: 2640,
+    phone: "+252 63 400 0355",
+    district: "Laascaanood Town Centre",
+    status: "Verified",
+    dateRegistered: "2025-12-29",
   },
   {
     id: "VGIS-LS-2026-0894",
@@ -185,6 +264,10 @@ const SEED_VOLUNTEERS = [
     logHistory: "540 student-hours, cobblestone & terminal grounds works",
     valueUSD: 1350,
     points: 1350,
+    phone: "+252 63 402 0894",
+    district: "Yagoori",
+    status: "Pending Verification",
+    dateRegistered: "2026-03-10",
   },
 ];
 
@@ -276,6 +359,111 @@ function ProgressBar({ pct, colorClass = "bg-[#10B981]" }) {
     <div className="h-2.5 w-full rounded-full bg-white/10 overflow-hidden">
       <div className={`h-full rounded-full ${colorClass} transition-all duration-500`} style={{ width: `${clamped}%` }} />
     </div>
+  );
+}
+
+function LoginModal({ open, onClose, onLogin }) {
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState(false);
+
+  if (!open) return null;
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const ok = onLogin(username, password);
+    if (!ok) {
+      setError(true);
+      return;
+    }
+    setUsername("");
+    setPassword("");
+    setError(false);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      <div className="w-full max-w-sm rounded-2xl bg-[#0F172A] border border-white/15 p-6 relative">
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white">
+          <X className="h-5 w-5" />
+        </button>
+        <div className="flex items-center gap-2 text-white font-semibold text-lg mb-1">
+          <Lock className="h-5 w-5 text-[#F59E0B]" /> Admin Login
+        </div>
+        <p className="text-sm text-gray-400 mb-4">Sign in to verify registrations and mark attendance.</p>
+
+        {error && (
+          <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+            Invalid username or password.
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="text-xs text-gray-400 uppercase tracking-wide">Username</label>
+            <input
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              autoComplete="username"
+              className="mt-1 w-full rounded-lg bg-white/5 border border-white/15 px-3 py-2 text-white text-sm focus:outline-none focus:border-[#F59E0B]"
+              required
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-400 uppercase tracking-wide">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              className="mt-1 w-full rounded-lg bg-white/5 border border-white/15 px-3 py-2 text-white text-sm focus:outline-none focus:border-[#F59E0B]"
+              required
+            />
+          </div>
+          <div className="text-[11px] text-gray-500 leading-relaxed">
+            Demo credentials — <code className="text-[#F59E0B]">admin / wadani2026</code> (Super Admin) or{" "}
+            <code className="text-[#F59E0B]">auditor / laas2026</code> (Field Auditor). Client-side demo login only;
+            do not reuse real passwords.
+          </div>
+          <button
+            type="submit"
+            className="w-full rounded-lg bg-[#F59E0B] text-[#0F172A] font-semibold py-2.5 hover:bg-[#F59E0B]/90 transition"
+          >
+            Sign In
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function AdminControl({ adminSession, onLoginClick, onLogout }) {
+  if (adminSession) {
+    return (
+      <div className="flex items-center gap-2 rounded-full border border-[#F59E0B]/35 bg-[#F59E0B]/10 pl-3 pr-1.5 py-1.5">
+        <Lock className="h-3.5 w-3.5 text-[#F59E0B]" />
+        <div className="leading-tight">
+          <div className="text-xs font-bold text-white">{adminSession.name}</div>
+          <div className="text-[10px] uppercase tracking-wide text-[#F59E0B]">{adminSession.role}</div>
+        </div>
+        <button
+          onClick={onLogout}
+          title="Log out"
+          className="rounded-full border border-white/15 p-1.5 text-gray-400 hover:text-white hover:border-[#F59E0B]"
+        >
+          <LogOut className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    );
+  }
+  return (
+    <button
+      onClick={onLoginClick}
+      className="flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.04] px-3.5 py-2 text-xs font-semibold text-white hover:border-[#F59E0B] hover:text-[#F59E0B] transition"
+    >
+      <Lock className="h-3.5 w-3.5" /> Admin Login
+    </button>
   );
 }
 
@@ -372,6 +560,7 @@ function TownHallTab() {
                 <input
                   type="number"
                   min="0"
+                  step="any"
                   placeholder="Enter custom monthly pledge ($)"
                   value={customPledge}
                   onChange={(e) => setCustomPledge(e.target.value)}
@@ -459,6 +648,8 @@ function TownHallTab() {
 function IntakeModal({ open, onClose, onSubmit }) {
   const [form, setForm] = useState({
     name: "",
+    phone: "",
+    district: DISTRICTS[0],
     category: "citizens",
     entityType: "",
     modality: "Labor",
@@ -482,8 +673,12 @@ function IntakeModal({ open, onClose, onSubmit }) {
       logHistory: `Self-registered: ${form.quantity || 0} ${form.modality === "Labor" ? "hrs" : "units"} pending field verification`,
       valueUSD: estimatedValue,
       points: estimatedValue,
+      phone: form.phone.trim(),
+      district: form.district,
+      status: "Pending Verification",
+      dateRegistered: todayStr(),
     });
-    setForm({ name: "", category: "citizens", entityType: "", modality: "Labor", quantity: "", unitValue: "" });
+    setForm({ name: "", phone: "", district: DISTRICTS[0], category: "citizens", entityType: "", modality: "Labor", quantity: "", unitValue: "" });
     onClose();
   };
 
@@ -507,6 +702,31 @@ function IntakeModal({ open, onClose, onSubmit }) {
               className="mt-1 w-full rounded-lg bg-white/5 border border-white/15 px-3 py-2 text-white text-sm focus:outline-none focus:border-[#F59E0B]"
               required
             />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-gray-400 uppercase tracking-wide">Phone Number</label>
+              <input
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                placeholder="+252 63 xxx xxxx"
+                className="mt-1 w-full rounded-lg bg-white/5 border border-white/15 px-3 py-2 text-white text-sm focus:outline-none focus:border-[#F59E0B]"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-gray-400 uppercase tracking-wide">District / Site Location</label>
+              <select
+                value={form.district}
+                onChange={(e) => setForm({ ...form, district: e.target.value })}
+                className="mt-1 w-full rounded-lg bg-white/5 border border-white/15 px-3 py-2 text-white text-sm focus:outline-none focus:border-[#F59E0B]"
+              >
+                {DISTRICTS.map((d) => (
+                  <option key={d} value={d} className="bg-[#0F172A]">
+                    {d}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -546,6 +766,7 @@ function IntakeModal({ open, onClose, onSubmit }) {
               <input
                 type="number"
                 min="0"
+                step="any"
                 value={form.quantity}
                 onChange={(e) => setForm({ ...form, quantity: e.target.value })}
                 className="mt-1 w-full rounded-lg bg-white/5 border border-white/15 px-3 py-2 text-white text-sm focus:outline-none focus:border-[#F59E0B]"
@@ -556,6 +777,7 @@ function IntakeModal({ open, onClose, onSubmit }) {
               <input
                 type="number"
                 min="0"
+                step="any"
                 value={form.unitValue}
                 onChange={(e) => setForm({ ...form, unitValue: e.target.value })}
                 className="mt-1 w-full rounded-lg bg-white/5 border border-white/15 px-3 py-2 text-white text-sm focus:outline-none focus:border-[#F59E0B]"
@@ -580,11 +802,10 @@ function IntakeModal({ open, onClose, onSubmit }) {
   );
 }
 
-function RegistryTab() {
-  const [volunteers, setVolunteers] = useState(SEED_VOLUNTEERS);
+function RegistryTab({ volunteers, isAdmin, onRegister, onVerify }) {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [search, setSearch] = useState("");
-  const [selectedId, setSelectedId] = useState(SEED_VOLUNTEERS[0].id);
+  const [selectedId, setSelectedId] = useState(volunteers[0]?.id);
   const [modalOpen, setModalOpen] = useState(false);
 
   const filtered = volunteers.filter((v) => {
@@ -659,12 +880,14 @@ function RegistryTab() {
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">Modality</th>
                 <th className="px-4 py-3 text-right">Value ($)</th>
+                <th className="px-4 py-3 text-right">Status</th>
                 <th className="px-4 py-3 text-right">Tier</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((v) => {
                 const tier = tierForPoints(v.points);
+                const verified = v.status === "Verified";
                 return (
                   <tr
                     key={v.id}
@@ -678,6 +901,15 @@ function RegistryTab() {
                     <td className="px-4 py-3 text-gray-300">{v.modality}</td>
                     <td className="px-4 py-3 text-right text-gray-200">{fmtUSD(v.valueUSD)}</td>
                     <td className="px-4 py-3 text-right">
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
+                          verified ? "bg-[#10B981]/15 text-[#10B981]" : "bg-gray-500/15 text-gray-300"
+                        }`}
+                      >
+                        {verified ? <CheckCircle2 className="h-3 w-3" /> : <Clock className="h-3 w-3" />} {v.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-right">
                       <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${tier.bg} ${tier.color}`}>
                         <Award className="h-3 w-3" /> {tier.name}
                       </span>
@@ -687,7 +919,7 @@ function RegistryTab() {
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-8 text-center text-gray-500">
+                  <td colSpan={6} className="px-4 py-8 text-center text-gray-500">
                     No records match this filter.
                   </td>
                 </tr>
@@ -704,6 +936,28 @@ function RegistryTab() {
               <div className="text-xs text-[#F59E0B] font-semibold mt-0.5">{selected.entityType}</div>
 
               <div className="mt-4 space-y-3 text-sm">
+                <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                  <span className="text-gray-400">Registration Status</span>
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                      selected.status === "Verified" ? "bg-[#10B981]/15 text-[#10B981]" : "bg-gray-500/15 text-gray-300"
+                    }`}
+                  >
+                    {selected.status === "Verified" ? <CheckCircle2 className="h-3 w-3" /> : <Clock className="h-3 w-3" />} {selected.status}
+                  </span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-gray-400">Phone</span>
+                  <span className="text-white font-mono text-xs">{selected.phone || "—"}</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-gray-400">District / Site</span>
+                  <span className="text-white font-medium">{selected.district || "—"}</span>
+                </div>
+                <div className="flex justify-between border-b border-white/5 pb-2">
+                  <span className="text-gray-400">Date Registered</span>
+                  <span className="text-white font-medium">{selected.dateRegistered || "—"}</span>
+                </div>
                 <div className="flex justify-between border-b border-white/5 pb-2">
                   <span className="text-gray-400">Contribution Modality</span>
                   <span className="text-white font-medium">{selected.modality}</span>
@@ -732,6 +986,20 @@ function RegistryTab() {
                   })()}
                 </div>
               </div>
+
+              {selected.status !== "Verified" &&
+                (isAdmin ? (
+                  <button
+                    onClick={() => onVerify(selected.id)}
+                    className="mt-4 w-full flex items-center justify-center gap-2 rounded-lg bg-[#10B981] text-[#062019] font-semibold py-2.5 hover:bg-[#10B981]/90 transition"
+                  >
+                    <CheckCircle2 className="h-4 w-4" /> Verify Registration
+                  </button>
+                ) : (
+                  <div className="mt-4 flex items-center justify-center gap-2 rounded-lg border border-dashed border-white/15 py-2.5 text-xs text-gray-500">
+                    <Lock className="h-3.5 w-3.5" /> Admin login required to verify this record
+                  </div>
+                ))}
             </div>
           ) : (
             <div className="text-gray-500 text-sm">Select a record to view its full VGIS profile.</div>
@@ -743,10 +1011,155 @@ function RegistryTab() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onSubmit={(newVolunteer) => {
-          setVolunteers((prev) => [newVolunteer, ...prev]);
+          onRegister(newVolunteer);
           setSelectedId(newVolunteer.id);
         }}
       />
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------
+ * TAB — Daily Attendance & Presence Tracking
+ * ---------------------------------------------------------------------- */
+
+function AttendanceTab({ volunteers, attendance, isAdmin, onMark }) {
+  const today = todayStr();
+  const todays = attendance.filter((a) => a.date === today);
+  const present = todays.filter((a) => a.status === "Present").length;
+  const late = todays.filter((a) => a.status === "Late").length;
+  const absent = todays.filter((a) => a.status === "Absent").length;
+
+  const recordFor = (volunteerId) => todays.find((a) => a.volunteerId === volunteerId);
+  const history = attendance.slice(0, 20);
+
+  const statusStyle = {
+    Present: { bg: "bg-[#10B981]/15", color: "text-[#10B981]", icon: CheckCircle2 },
+    Late: { bg: "bg-[#F59E0B]/15", color: "text-[#F59E0B]", icon: Clock },
+    Absent: { bg: "bg-red-500/15", color: "text-red-400", icon: XCircle },
+    "Not Marked": { bg: "bg-gray-500/10", color: "text-gray-500", icon: null },
+  };
+
+  return (
+    <div className="space-y-6">
+      <SectionHeader
+        eyebrow="Field Verification Log"
+        title="Daily Attendance & Presence Tracking"
+        subtitle="Admins mark daily presence for registered volunteers, contractors, and field teams. Attendance builds the verified log history behind each VGIS profile."
+      />
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="rounded-xl bg-white/[0.03] border border-white/10 p-4">
+          <div className="text-xs text-gray-400 uppercase tracking-wide">Total Volunteers</div>
+          <div className="text-2xl font-bold text-white mt-1">{fmtNum(volunteers.length)}</div>
+        </div>
+        <div className="rounded-xl bg-white/[0.03] border border-emerald-500/30 p-4">
+          <div className="text-xs text-gray-400 uppercase tracking-wide">Present Today</div>
+          <div className="text-2xl font-bold text-[#10B981] mt-1">{fmtNum(present)}</div>
+        </div>
+        <div className="rounded-xl bg-white/[0.03] border border-[#F59E0B]/30 p-4">
+          <div className="text-xs text-gray-400 uppercase tracking-wide">Late Today</div>
+          <div className="text-2xl font-bold text-[#F59E0B] mt-1">{fmtNum(late)}</div>
+        </div>
+        <div className="rounded-xl bg-white/[0.03] border border-red-500/30 p-4">
+          <div className="text-xs text-gray-400 uppercase tracking-wide">Absent Today</div>
+          <div className="text-2xl font-bold text-red-400 mt-1">{fmtNum(absent)}</div>
+        </div>
+      </div>
+
+      <Card className="overflow-x-auto">
+        <div className="flex items-center justify-between flex-wrap gap-2 mb-4">
+          <div className="flex items-center gap-2 text-white font-semibold text-lg">
+            <Calendar className="h-5 w-5 text-[#F59E0B]" /> Today's Roster — {today}
+          </div>
+          {!isAdmin && (
+            <div className="flex items-center gap-1.5 text-xs text-gray-500">
+              <Lock className="h-3 w-3" /> Log in as an admin to mark attendance
+            </div>
+          )}
+        </div>
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-xs uppercase tracking-wide text-gray-400 border-b border-white/10">
+              <th className="py-2 pr-4">Volunteer</th>
+              <th className="py-2 pr-4">Category</th>
+              <th className="py-2 pr-4">Modality</th>
+              <th className="py-2 pr-4 text-right">Today's Status</th>
+              <th className="py-2 text-right">Mark</th>
+            </tr>
+          </thead>
+          <tbody>
+            {volunteers.map((v) => {
+              const rec = recordFor(v.id);
+              const status = rec ? rec.status : "Not Marked";
+              const s = statusStyle[status];
+              const catLabel = CATEGORIES.find((c) => c.id === v.category)?.label || v.category;
+              return (
+                <tr key={v.id} className="border-b border-white/5">
+                  <td className="py-2.5 pr-4 text-white font-medium">{v.name}</td>
+                  <td className="py-2.5 pr-4 text-gray-400">{catLabel}</td>
+                  <td className="py-2.5 pr-4 text-gray-300">{v.modality}</td>
+                  <td className="py-2.5 pr-4 text-right">
+                    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${s.bg} ${s.color}`}>
+                      {s.icon && <s.icon className="h-3 w-3" />} {status}
+                    </span>
+                  </td>
+                  <td className="py-2.5">
+                    <div className="flex justify-end gap-1.5 flex-wrap">
+                      <button
+                        disabled={!isAdmin}
+                        onClick={() => onMark(v.id, v.name, "Present")}
+                        className="flex items-center gap-1 rounded-lg border border-white/15 px-2.5 py-1.5 text-[11px] font-semibold text-gray-400 hover:border-[#10B981] hover:text-[#10B981] disabled:opacity-40 disabled:hover:border-white/15 disabled:hover:text-gray-400 disabled:cursor-not-allowed"
+                      >
+                        <CheckCircle2 className="h-3 w-3" /> Present
+                      </button>
+                      <button
+                        disabled={!isAdmin}
+                        onClick={() => onMark(v.id, v.name, "Late")}
+                        className="flex items-center gap-1 rounded-lg border border-white/15 px-2.5 py-1.5 text-[11px] font-semibold text-gray-400 hover:border-[#F59E0B] hover:text-[#F59E0B] disabled:opacity-40 disabled:hover:border-white/15 disabled:hover:text-gray-400 disabled:cursor-not-allowed"
+                      >
+                        <Clock className="h-3 w-3" /> Late
+                      </button>
+                      <button
+                        disabled={!isAdmin}
+                        onClick={() => onMark(v.id, v.name, "Absent")}
+                        className="flex items-center gap-1 rounded-lg border border-white/15 px-2.5 py-1.5 text-[11px] font-semibold text-gray-400 hover:border-red-400 hover:text-red-400 disabled:opacity-40 disabled:hover:border-white/15 disabled:hover:text-gray-400 disabled:cursor-not-allowed"
+                      >
+                        <XCircle className="h-3 w-3" /> Absent
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </Card>
+
+      <Card>
+        <div className="flex items-center gap-2 text-white font-semibold text-lg mb-4">
+          <ClipboardList className="h-5 w-5 text-[#F59E0B]" /> Attendance History Log
+        </div>
+        <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+          {history.length === 0 && <div className="text-xs text-gray-600 italic">No attendance marked yet.</div>}
+          {history.map((a) => {
+            const s = statusStyle[a.status];
+            return (
+              <div key={a.id} className="flex items-start gap-2 rounded-lg bg-white/[0.03] border border-white/10 px-3 py-2 text-xs">
+                {s.icon && <s.icon className={`h-3.5 w-3.5 mt-0.5 shrink-0 ${s.color}`} />}
+                <div>
+                  <div className="text-gray-300">
+                    <span className="text-white font-medium">{a.volunteerName}</span> — {a.date} · {a.time}
+                  </div>
+                  <div className="text-gray-500">
+                    Marked <span className={`font-semibold ${s.color}`}>{a.status}</span> by {a.markedBy}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
     </div>
   );
 }
@@ -1244,6 +1657,51 @@ function IntegrityTab() {
 
 export default function ProjectWadaniDashboard() {
   const [activeTab, setActiveTab] = useState("townhall");
+  const [volunteers, setVolunteers] = useState(() => loadJSON(STORAGE_KEYS.volunteers, SEED_VOLUNTEERS));
+  const [attendance, setAttendance] = useState(() => loadJSON(STORAGE_KEYS.attendance, []));
+  const [adminSession, setAdminSession] = useState(() => loadJSON(STORAGE_KEYS.session, null));
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+
+  useEffect(() => saveJSON(STORAGE_KEYS.volunteers, volunteers), [volunteers]);
+  useEffect(() => saveJSON(STORAGE_KEYS.attendance, attendance), [attendance]);
+  useEffect(() => saveJSON(STORAGE_KEYS.session, adminSession), [adminSession]);
+
+  const isAdmin = !!adminSession;
+
+  const handleLogin = (username, password) => {
+    const match = ADMINS.find((a) => a.username === username && a.password === password);
+    if (!match) return false;
+    setAdminSession({ username: match.username, name: match.name, role: match.role, loginTime: Date.now() });
+    return true;
+  };
+
+  const handleVerify = (id) => {
+    setVolunteers((prev) => prev.map((v) => (v.id === id ? { ...v, status: "Verified" } : v)));
+  };
+
+  const handleMarkAttendance = (volunteerId, volunteerName, status) => {
+    if (!adminSession) return;
+    const today = todayStr();
+    const time = new Date().toLocaleTimeString();
+    setAttendance((prev) => {
+      const idx = prev.findIndex((a) => a.volunteerId === volunteerId && a.date === today);
+      const entry = {
+        id: idx >= 0 ? prev[idx].id : `${Date.now()}-${volunteerId}`,
+        volunteerId,
+        volunteerName,
+        date: today,
+        status,
+        time,
+        markedBy: adminSession.name,
+      };
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = entry;
+        return next;
+      }
+      return [entry, ...prev];
+    });
+  };
 
   return (
     <div className="min-h-screen bg-[#0F172A] text-gray-200">
@@ -1264,11 +1722,16 @@ export default function ProjectWadaniDashboard() {
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <MetricTile icon={HandCoins} label="VGIS Capital Raised" value={fmtUSD(4820000)} />
               <MetricTile icon={Users} label="Active Volunteers" value={fmtNum(6540)} accent="text-[#10B981]" />
               <MetricTile icon={Route} label="Kilometers Paved" value="14.1 km" />
               <MetricTile icon={Plane} label="Runway Completion" value="61%" accent="text-[#10B981]" />
+              <AdminControl
+                adminSession={adminSession}
+                onLoginClick={() => setLoginModalOpen(true)}
+                onLogout={() => setAdminSession(null)}
+              />
             </div>
           </div>
 
@@ -1292,7 +1755,17 @@ export default function ProjectWadaniDashboard() {
 
       <main className="max-w-7xl mx-auto px-4 md:px-6 py-8">
         {activeTab === "townhall" && <TownHallTab />}
-        {activeTab === "registry" && <RegistryTab />}
+        {activeTab === "registry" && (
+          <RegistryTab
+            volunteers={volunteers}
+            isAdmin={isAdmin}
+            onRegister={(v) => setVolunteers((prev) => [v, ...prev])}
+            onVerify={handleVerify}
+          />
+        )}
+        {activeTab === "attendance" && (
+          <AttendanceTab volunteers={volunteers} attendance={attendance} isAdmin={isAdmin} onMark={handleMarkAttendance} />
+        )}
         {activeTab === "vgis" && <VGISCalculatorTab />}
         {activeTab === "projects" && <ProjectsTab />}
         {activeTab === "integrity" && <IntegrityTab />}
@@ -1301,6 +1774,8 @@ export default function ProjectWadaniDashboard() {
       <footer className="border-t border-white/10 py-6 text-center text-xs text-gray-500">
         PROJECT WADANI · Laascaanood Civic Infrastructure &amp; Volunteer Grading System — North East State of Somalia
       </footer>
+
+      <LoginModal open={loginModalOpen} onClose={() => setLoginModalOpen(false)} onLogin={handleLogin} />
     </div>
   );
 }

@@ -441,6 +441,73 @@
   @media (max-width: 640px) {
     .metrics-strip { display: none; }
   }
+
+  /* ---------- Admin control ---------- */
+  .admin-control { display: flex; align-items: center; gap: 8px; }
+  .admin-pill {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--accent-soft); border: 1px solid rgba(245,158,11,0.35);
+    border-radius: 99px; padding: 6px 8px 6px 12px; font-size: 12.5px;
+  }
+  .admin-pill .who { display: flex; flex-direction: column; line-height: 1.25; }
+  .admin-pill .who .name { font-weight: 700; color: var(--text); }
+  .admin-pill .who .role { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--accent); }
+  .icon-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; border-radius: 99px; border: 1px solid var(--border-strong);
+    background: transparent; color: var(--text-muted); cursor: pointer;
+  }
+  .icon-btn:hover { color: var(--text); border-color: var(--accent); }
+  .icon-btn svg { width: 14px; height: 14px; }
+  .btn-login {
+    display: inline-flex; align-items: center; gap: 7px;
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border-strong);
+    color: var(--text); font: inherit; font-weight: 700; font-size: 12.5px;
+    padding: 8px 14px; border-radius: 99px; cursor: pointer;
+  }
+  .btn-login:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-login svg { width: 14px; height: 14px; }
+
+  .form-error {
+    display: none; font-size: 12.5px; color: var(--danger);
+    background: var(--danger-soft); border: 1px solid rgba(248,113,113,0.35);
+    border-radius: 9px; padding: 8px 12px; margin-bottom: 14px;
+  }
+  .form-error.show { display: block; }
+  .form-hint { font-size: 11.5px; color: var(--text-faint); margin-top: 12px; line-height: 1.5; }
+  .form-hint code { color: var(--accent); font-family: var(--font-mono); }
+
+  /* status pills reuse .pill; new tones */
+  .pill.verified { background: var(--success-soft); color: var(--success); }
+  .pill.pendingv { background: rgba(148,163,184,0.15); color: #CBD5E1; }
+  .pill.present { background: var(--success-soft); color: var(--success); }
+  .pill.late { background: var(--accent-soft); color: var(--accent); }
+  .pill.absent { background: var(--danger-soft); color: var(--danger); }
+  .pill.notmarked { background: rgba(148,163,184,0.12); color: var(--text-faint); }
+
+  .locked-note {
+    display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-faint);
+  }
+  .locked-note svg { width: 12px; height: 12px; }
+
+  .mark-btns { display: flex; gap: 6px; justify-content: flex-end; flex-wrap: wrap; }
+  .mark-btn {
+    display: inline-flex; align-items: center; gap: 5px; font: inherit; font-weight: 700; font-size: 11px;
+    border-radius: 8px; border: 1px solid var(--border-strong); background: transparent;
+    color: var(--text-muted); padding: 6px 9px; cursor: pointer;
+  }
+  .mark-btn svg { width: 12px; height: 12px; }
+  .mark-btn.present:hover { border-color: var(--success); color: var(--success); }
+  .mark-btn.late:hover { border-color: var(--accent); color: var(--accent); }
+  .mark-btn.absent:hover { border-color: var(--danger); color: var(--danger); }
+  .mark-btn:disabled { opacity: .45; cursor: not-allowed; }
+  .mark-btn:disabled:hover { border-color: var(--border-strong); color: var(--text-muted); }
+
+  .attendance-history-entry {
+    display: flex; gap: 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 12px; font-size: 12.5px;
+  }
+  .attendance-history-entry svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; }
 </style>
 </head>
 <body>
@@ -460,6 +527,7 @@
         <div class="metric-tile"><div class="icon-wrap" data-icon="route" style="color:var(--accent)"></div><div><div class="label">Km Paved</div><div class="value tabular">14.1 km</div></div></div>
         <div class="metric-tile"><div class="icon-wrap" data-icon="plane" style="color:var(--success)"></div><div><div class="label">Runway Completion</div><div class="value tabular">61%</div></div></div>
       </div>
+      <div class="admin-control" id="adminControl"></div>
     </div>
   </div>
   <nav class="tab-rail" id="tabRail"></nav>
@@ -468,6 +536,7 @@
 <main>
   <section class="panel" id="panel-townhall"></section>
   <section class="panel" id="panel-registry"></section>
+  <section class="panel" id="panel-attendance"></section>
   <section class="panel" id="panel-vgis"></section>
   <section class="panel" id="panel-projects"></section>
   <section class="panel" id="panel-integrity"></section>
@@ -487,6 +556,16 @@
       </div>
       <div class="grid grid-2" style="gap:12px; margin-bottom:14px;">
         <div>
+          <label class="field-label">Phone Number</label>
+          <input type="text" id="fPhone" placeholder="+252 63 xxx xxxx" />
+        </div>
+        <div>
+          <label class="field-label">District / Site Location</label>
+          <select id="fDistrict"></select>
+        </div>
+      </div>
+      <div class="grid grid-2" style="gap:12px; margin-bottom:14px;">
+        <div>
           <label class="field-label">Category</label>
           <select id="fCategory"></select>
         </div>
@@ -500,11 +579,11 @@
       <div class="grid grid-2" style="gap:12px; margin-bottom:14px;">
         <div>
           <label class="field-label" id="fQtyLabel">Hours</label>
-          <input type="number" min="0" id="fQty" value="0" />
+          <input type="number" min="0" step="any" id="fQty" value="0" />
         </div>
         <div>
           <label class="field-label">$ Value per Unit</label>
-          <input type="number" min="0" id="fUnitValue" value="0" />
+          <input type="number" min="0" step="any" id="fUnitValue" value="0" />
         </div>
       </div>
       <div class="stat-box" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
@@ -512,6 +591,27 @@
         <span class="mono tabular" style="color:var(--accent); font-weight:700;" id="fEstimate">$0 · 0.0 pts</span>
       </div>
       <button type="submit" class="btn-solid" style="width:100%; justify-content:center;">Submit Registration for Field Verification</button>
+    </form>
+  </div>
+</div>
+
+<div class="modal-overlay" id="loginModal">
+  <div class="modal-box" style="max-width:400px;">
+    <button class="modal-close" id="loginCloseBtn" aria-label="Close"></button>
+    <h3 class="card-title" style="margin-bottom:2px;"><span data-icon="lock"></span> Admin Login</h3>
+    <p class="card-sub">Sign in to verify registrations and mark attendance.</p>
+    <div class="form-error" id="loginError">Invalid username or password.</div>
+    <form id="loginForm">
+      <div style="margin-bottom:14px;">
+        <label class="field-label">Username</label>
+        <input type="text" id="loginUsername" autocomplete="username" required />
+      </div>
+      <div style="margin-bottom:6px;">
+        <label class="field-label">Password</label>
+        <input type="password" id="loginPassword" autocomplete="current-password" required />
+      </div>
+      <div class="form-hint">Demo credentials — <code>admin / wadani2026</code> (Super Admin) or <code>auditor / laas2026</code> (Field Auditor). This is a client-side demo login only; do not reuse real passwords.</div>
+      <button type="submit" class="btn-solid" style="width:100%; justify-content:center; margin-top:16px;">Sign In</button>
     </form>
   </div>
 </div>
@@ -554,20 +654,103 @@ const ICONS = {
   briefcase: '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
   usercheck: '<circle cx="9" cy="7" r="4"/><path d="M2 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2"/><polyline points="17 11 19 13 23 9"/>',
   filter: '<polygon points="4 3 20 3 14 12 14 19 10 21 10 12 4 3"/>',
+  calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+  lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
+  logout: '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>',
+  checkcircle: '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
+  slash: '<circle cx="12" cy="12" r="9"/><line x1="4.9" y1="4.9" x2="19.1" y2="19.1"/>',
 };
 function icon(name, extra) {
   return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ' + (extra || '') + '>' + (ICONS[name] || '') + '</svg>';
 }
 document.querySelectorAll('[data-icon]').forEach(el => { el.innerHTML = icon(el.dataset.icon); });
 document.getElementById('modalCloseBtn').innerHTML = icon('x');
+document.getElementById('loginCloseBtn').innerHTML = icon('x');
 
 /* ---------------- Formatters ---------------- */
 const fmtUSD = n => '$' + Math.round(n).toLocaleString('en-US');
 const fmtNum = (n, d = 0) => Number(n).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
+const todayStr = () => new Date().toISOString().slice(0, 10);
+
+/* ---------------- Local persistence ---------------- */
+const STORAGE_KEYS = {
+  volunteers: 'wadani_vgis_volunteers_v1',
+  attendance: 'wadani_vgis_attendance_v1',
+  session: 'wadani_vgis_admin_session_v1',
+};
+function loadJSON(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch (e) { return fallback; }
+}
+function saveJSON(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* storage unavailable */ }
+}
+
+/* ---------------- Admin accounts (client-side demo auth) ---------------- */
+const ADMINS = [
+  { username: 'admin', password: 'wadani2026', name: 'System Administrator', role: 'Super Admin' },
+  { username: 'auditor', password: 'laas2026', name: 'Field Auditor', role: 'Field Auditor' },
+];
+let adminSession = loadJSON(STORAGE_KEYS.session, null);
+function isAdmin() { return !!adminSession; }
+
+const refreshCallbacks = {};
+function registerRefresh(name, fn) { refreshCallbacks[name] = fn; }
+function refreshAll() { Object.values(refreshCallbacks).forEach(fn => { try { fn(); } catch (e) {} }); }
+
+function renderAdminControl() {
+  const el = document.getElementById('adminControl');
+  if (adminSession) {
+    el.innerHTML = `
+      <div class="admin-pill">
+        <span style="color:var(--accent);">${icon('lock')}</span>
+        <div class="who"><span class="name">${adminSession.name}</span><span class="role">${adminSession.role}</span></div>
+        <button class="icon-btn" id="logoutBtn" title="Log out">${icon('logout')}</button>
+      </div>
+    `;
+    document.getElementById('logoutBtn').addEventListener('click', () => {
+      adminSession = null;
+      saveJSON(STORAGE_KEYS.session, null);
+      renderAdminControl();
+      refreshAll();
+    });
+  } else {
+    el.innerHTML = `<button class="btn-login" id="loginTriggerBtn">${icon('lock')} Admin Login</button>`;
+    document.getElementById('loginTriggerBtn').addEventListener('click', openLoginModal);
+  }
+}
+
+function openLoginModal() {
+  document.getElementById('loginError').classList.remove('show');
+  document.getElementById('loginForm').reset();
+  document.getElementById('loginModal').classList.add('open');
+}
+function closeLoginModal() { document.getElementById('loginModal').classList.remove('open'); }
+document.getElementById('loginCloseBtn').addEventListener('click', closeLoginModal);
+document.getElementById('loginModal').addEventListener('click', e => { if (e.target.id === 'loginModal') closeLoginModal(); });
+document.getElementById('loginForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const u = document.getElementById('loginUsername').value.trim();
+  const p = document.getElementById('loginPassword').value;
+  const match = ADMINS.find(a => a.username === u && a.password === p);
+  if (!match) {
+    document.getElementById('loginError').classList.add('show');
+    return;
+  }
+  adminSession = { username: match.username, name: match.name, role: match.role, loginTime: Date.now() };
+  saveJSON(STORAGE_KEYS.session, adminSession);
+  closeLoginModal();
+  renderAdminControl();
+  refreshAll();
+});
+renderAdminControl();
 
 /* ---------------- Data ---------------- */
 const ROAD_COST_PER_KM = 45000;
 const RUNWAY_COST_PER_KM = 1250000;
+const DISTRICTS = ['Laascaanood Town Centre', 'Kalabaydh Corridor', 'Yagoori', 'Xudun Road', 'Airport Perimeter', 'Other'];
 
 const CATEGORIES = [
   { id: 'citizens', label: 'Ordinary Citizens', icon: 'usercheck' },
@@ -586,18 +769,24 @@ const VALUATION_BASELINE = [
   { activity: '$1 USD Cash / Micro-donation', usd: 1.0, points: 1.0 },
 ];
 
-let volunteers = [
-  { id: 'VGIS-LS-2026-0102', name: 'Xasan Cabdi Warsame', category: 'citizens', entityType: 'Individual Citizen', modality: 'Labor', logHistory: '42 hrs unskilled labor, box-culvert excavation, Kalabaydh corridor', valueUSD: 105, points: 105 },
-  { id: 'VGIS-LS-2026-0087', name: 'Golis Construction & Trading Co.', category: 'business', entityType: 'Registered Business', modality: 'Equipment', logHistory: '1 Grader logged 60 Hobbs hrs, Kalabaydh corridor DBST works', valueUSD: 3900, points: 3900 },
-  { id: 'VGIS-LS-2026-0451', name: 'Sahra M. Egal (Toronto Chapter)', category: 'diaspora', entityType: 'Diaspora Donor', modality: 'Cash', logHistory: 'Monthly VGIS pledge, 14 consecutive months, USSD + Swift', valueUSD: 1400, points: 1400 },
-  { id: 'VGIS-LS-2026-0512', name: 'Laascaanood Polytechnic — Civil Eng. Brigade', category: 'education', entityType: 'Educational Institution', modality: 'Labor', logHistory: '310 student-hours, interlocking cobblestone paving brigades', valueUSD: 775, points: 775 },
-  { id: 'VGIS-LS-2026-0033', name: 'Eng. Faysal Nur Jibril', category: 'government', entityType: 'Government Civil Engineer', modality: 'Expert Advisory', logHistory: '220 hrs airport runway leveling design & site supervision', valueUSD: 4400, points: 4400 },
-  { id: 'VGIS-LS-2026-0210', name: 'Nomad Fuel & Logistics', category: 'business', entityType: 'Registered Business', modality: 'Fuel', logHistory: '6,200L diesel donated, runway rehabilitation fleet', valueUSD: 8680, points: 8680 },
-  { id: 'VGIS-LS-2026-0668', name: 'Amina H. Farah', category: 'citizens', entityType: 'Individual Citizen', modality: 'Labor', logHistory: '18 hrs unskilled labor, security fence trenching', valueUSD: 45, points: 45 },
-  { id: 'VGIS-LS-2026-0729', name: 'Waqooyi Galbeed Diaspora Assoc. (Oslo)', category: 'diaspora', entityType: 'Diaspora Group', modality: 'Cash', logHistory: 'Bulk 1:1 matched sponsorship, solar night-landing lights unit', valueUSD: 22000, points: 22000 },
-  { id: 'VGIS-LS-2026-0355', name: 'Ministry of Public Works — Field Unit 3', category: 'government', entityType: 'Government Expert Team', modality: 'Expert Advisory', logHistory: 'Quality assurance inspections, 12 site audits', valueUSD: 2640, points: 2640 },
-  { id: 'VGIS-LS-2026-0894', name: 'SSC Youth Volunteer Corps — Batch 4', category: 'education', entityType: 'Student Brigade', modality: 'Labor', logHistory: '540 student-hours, cobblestone & terminal grounds works', valueUSD: 1350, points: 1350 },
+const SEED_VOLUNTEERS = [
+  { id: 'VGIS-LS-2026-0102', name: 'Xasan Cabdi Warsame', category: 'citizens', entityType: 'Individual Citizen', modality: 'Labor', logHistory: '42 hrs unskilled labor, box-culvert excavation, Kalabaydh corridor', valueUSD: 105, points: 105, phone: '+252 63 401 1102', district: 'Kalabaydh Corridor', status: 'Verified', dateRegistered: '2026-01-14' },
+  { id: 'VGIS-LS-2026-0087', name: 'Golis Construction & Trading Co.', category: 'business', entityType: 'Registered Business', modality: 'Equipment', logHistory: '1 Grader logged 60 Hobbs hrs, Kalabaydh corridor DBST works', valueUSD: 3900, points: 3900, phone: '+252 63 700 0087', district: 'Kalabaydh Corridor', status: 'Verified', dateRegistered: '2026-01-09' },
+  { id: 'VGIS-LS-2026-0451', name: 'Sahra M. Egal (Toronto Chapter)', category: 'diaspora', entityType: 'Diaspora Donor', modality: 'Cash', logHistory: 'Monthly VGIS pledge, 14 consecutive months, USSD + Swift', valueUSD: 1400, points: 1400, phone: '+1 416 555 0142', district: 'Other', status: 'Verified', dateRegistered: '2025-11-02' },
+  { id: 'VGIS-LS-2026-0512', name: 'Laascaanood Polytechnic — Civil Eng. Brigade', category: 'education', entityType: 'Educational Institution', modality: 'Labor', logHistory: '310 student-hours, interlocking cobblestone paving brigades', valueUSD: 775, points: 775, phone: '+252 63 402 0512', district: 'Laascaanood Town Centre', status: 'Verified', dateRegistered: '2026-02-01' },
+  { id: 'VGIS-LS-2026-0033', name: 'Eng. Faysal Nur Jibril', category: 'government', entityType: 'Government Civil Engineer', modality: 'Expert Advisory', logHistory: '220 hrs airport runway leveling design & site supervision', valueUSD: 4400, points: 4400, phone: '+252 63 400 0033', district: 'Airport Perimeter', status: 'Verified', dateRegistered: '2025-12-11' },
+  { id: 'VGIS-LS-2026-0210', name: 'Nomad Fuel & Logistics', category: 'business', entityType: 'Registered Business', modality: 'Fuel', logHistory: '6,200L diesel donated, runway rehabilitation fleet', valueUSD: 8680, points: 8680, phone: '+252 63 700 0210', district: 'Airport Perimeter', status: 'Verified', dateRegistered: '2026-01-22' },
+  { id: 'VGIS-LS-2026-0668', name: 'Amina H. Farah', category: 'citizens', entityType: 'Individual Citizen', modality: 'Labor', logHistory: '18 hrs unskilled labor, security fence trenching', valueUSD: 45, points: 45, phone: '+252 63 401 0668', district: 'Airport Perimeter', status: 'Pending Verification', dateRegistered: '2026-03-02' },
+  { id: 'VGIS-LS-2026-0729', name: 'Waqooyi Galbeed Diaspora Assoc. (Oslo)', category: 'diaspora', entityType: 'Diaspora Group', modality: 'Cash', logHistory: 'Bulk 1:1 matched sponsorship, solar night-landing lights unit', valueUSD: 22000, points: 22000, phone: '+47 900 55 214', district: 'Other', status: 'Verified', dateRegistered: '2025-10-18' },
+  { id: 'VGIS-LS-2026-0355', name: 'Ministry of Public Works — Field Unit 3', category: 'government', entityType: 'Government Expert Team', modality: 'Expert Advisory', logHistory: 'Quality assurance inspections, 12 site audits', valueUSD: 2640, points: 2640, phone: '+252 63 400 0355', district: 'Laascaanood Town Centre', status: 'Verified', dateRegistered: '2025-12-29' },
+  { id: 'VGIS-LS-2026-0894', name: 'SSC Youth Volunteer Corps — Batch 4', category: 'education', entityType: 'Student Brigade', modality: 'Labor', logHistory: '540 student-hours, cobblestone & terminal grounds works', valueUSD: 1350, points: 1350, phone: '+252 63 402 0894', district: 'Yagoori', status: 'Pending Verification', dateRegistered: '2026-03-10' },
 ];
+
+let volunteers = loadJSON(STORAGE_KEYS.volunteers, SEED_VOLUNTEERS);
+function persistVolunteers() { saveJSON(STORAGE_KEYS.volunteers, volunteers); }
+
+let attendance = loadJSON(STORAGE_KEYS.attendance, []);
+function persistAttendance() { saveJSON(STORAGE_KEYS.attendance, attendance); }
 
 const FLEET = [
   { id: 'BUS-004', type: 'Grader', project: 'Kalabaydh Corridor', hobbsHrs: 612.4, status: 'Active' },
@@ -632,6 +821,7 @@ function tierFor(points) {
 const TABS = [
   { id: 'townhall', label: 'Diaspora Town Hall', icon: 'globe' },
   { id: 'registry', label: 'Volunteer Registry', icon: 'users' },
+  { id: 'attendance', label: 'Attendance', icon: 'calendar' },
   { id: 'vgis', label: 'VGIS Core Calculator', icon: 'calculator' },
   { id: 'projects', label: 'Priority Projects', icon: 'route' },
   { id: 'integrity', label: 'Integrity & Audit', icon: 'shield' },
@@ -692,7 +882,7 @@ setActiveTab('townhall');
           <div>
             <label class="field-label">Monthly Pledge per Donor</label>
             <div class="chip-row" id="pledgeChips"></div>
-            <input type="number" min="0" id="customPledge" placeholder="Enter custom monthly pledge ($)" style="display:none; margin-top:10px;" />
+            <input type="number" min="0" step="any" id="customPledge" placeholder="Enter custom monthly pledge ($)" style="display:none; margin-top:10px;" />
           </div>
           <div>
             <div class="field-row"><span>Number of Diaspora Donors</span><span class="val tabular" id="donorsVal">8,000</span></div>
@@ -800,7 +990,7 @@ setActiveTab('townhall');
     <div class="grid" style="grid-template-columns: 2fr 1fr;">
       <div class="card table-scroll" style="padding:0;">
         <table>
-          <thead><tr><th>System ID</th><th>Name</th><th>Modality</th><th style="text-align:right;">Value ($)</th><th style="text-align:right;">Tier</th></tr></thead>
+          <thead><tr><th>System ID</th><th>Name</th><th>Modality</th><th style="text-align:right;">Value ($)</th><th style="text-align:right;">Status</th><th style="text-align:right;">Tier</th></tr></thead>
           <tbody id="registryBody"></tbody>
         </table>
       </div>
@@ -855,11 +1045,13 @@ setActiveTab('townhall');
       body.innerHTML = list.map(v => {
         const tier = tierFor(v.points);
         const isSel = v.id === selectedId;
+        const statusCls = v.status === 'Verified' ? 'verified' : 'pendingv';
         return `<tr class="selectable${isSel ? ' selected' : ''}" data-id="${v.id}">
           <td class="mono" style="font-size:11.5px; color:var(--text-faint);">${v.id}</td>
           <td style="color:var(--text); font-weight:600;">${v.name}</td>
           <td>${v.modality}</td>
           <td class="tabular" style="text-align:right;">${fmtUSD(v.valueUSD)}</td>
+          <td style="text-align:right;"><span class="pill ${statusCls}">${v.status === 'Verified' ? icon('checkcircle') : icon('clock')} ${v.status}</span></td>
           <td style="text-align:right;"><span class="pill ${tier.cls}">${icon('award')} ${tier.name}</span></td>
         </tr>`;
       }).join('');
@@ -875,18 +1067,36 @@ setActiveTab('townhall');
     const selected = volunteers.find(v => v.id === selectedId) || list[0];
     if (!selected) { panel.innerHTML = '<div style="color:var(--text-faint); font-size:13.5px;">Select a record to view its full VGIS profile.</div>'; return; }
     const tier = tierFor(selected.points);
+    const statusCls = selected.status === 'Verified' ? 'verified' : 'pendingv';
     panel.innerHTML = `
       <div class="mono" style="font-size:11px; color:var(--text-faint);">${selected.id}</div>
       <div style="font-size:17px; font-weight:800; color:var(--text); margin-top:4px;">${selected.name}</div>
       <div style="font-size:11.5px; color:var(--accent); font-weight:700; margin-top:2px;">${selected.entityType}</div>
       <div style="margin-top:16px; display:flex; flex-direction:column; gap:12px; font-size:13.5px;">
+        <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--text-muted);">Registration Status</span><span class="pill ${statusCls}" style="font-size:11.5px; padding:4px 10px;">${selected.status === 'Verified' ? icon('checkcircle') : icon('clock')} ${selected.status}</span></div>
+        <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:10px;"><span style="color:var(--text-muted);">Phone</span><span class="mono" style="font-weight:600;">${selected.phone || '—'}</span></div>
+        <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:10px;"><span style="color:var(--text-muted);">District / Site</span><span style="font-weight:600;">${selected.district || '—'}</span></div>
+        <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:10px;"><span style="color:var(--text-muted);">Date Registered</span><span class="tabular">${selected.dateRegistered || '—'}</span></div>
         <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:10px;"><span style="color:var(--text-muted);">Contribution Modality</span><span style="font-weight:600;">${selected.modality}</span></div>
         <div style="border-bottom:1px solid var(--border); padding-bottom:10px;"><div style="color:var(--text-muted); margin-bottom:4px;">Verified Log History &amp; Output</div><div style="font-size:12px; color:#CBD5E1; line-height:1.5;">${selected.logHistory}</div></div>
         <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:10px;"><span style="color:var(--text-muted);">Economic Value Equivalent</span><span class="tabular" style="color:var(--success); font-weight:700;">${fmtUSD(selected.valueUSD)}</span></div>
         <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:10px;"><span style="color:var(--text-muted);">VGIS Points Earned</span><span class="tabular" style="font-weight:700;">${fmtNum(selected.points, 1)}</span></div>
         <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--text-muted);">Dynamic Tier Grade</span><span class="pill ${tier.cls}" style="font-size:12px; padding:5px 12px;">${icon('award')} ${tier.name}</span></div>
       </div>
+      ${selected.status !== 'Verified'
+        ? (isAdmin()
+            ? `<button class="btn-solid success" id="verifyBtn" style="width:100%; justify-content:center; margin-top:16px;">${icon('checkcircle')} Verify Registration</button>`
+            : `<div class="locked-note" style="justify-content:center; margin-top:16px; border:1px dashed var(--border-strong); border-radius:10px; padding:9px;">${icon('lock')} Admin login required to verify this record</div>`)
+        : ''}
     `;
+    const verifyBtn = document.getElementById('verifyBtn');
+    if (verifyBtn) {
+      verifyBtn.addEventListener('click', () => {
+        selected.status = 'Verified';
+        persistVolunteers();
+        render();
+      });
+    }
   }
 
   /* Intake modal wiring */
@@ -896,6 +1106,13 @@ setActiveTab('townhall');
     opt.value = c.id; opt.textContent = c.label;
     fCategory.appendChild(opt);
   });
+  const fDistrict = document.getElementById('fDistrict');
+  DISTRICTS.forEach(d => {
+    const opt = document.createElement('option');
+    opt.value = d; opt.textContent = d;
+    fDistrict.appendChild(opt);
+  });
+  const fPhone = document.getElementById('fPhone');
   const fModality = document.getElementById('fModality');
   const fQty = document.getElementById('fQty');
   const fUnitValue = document.getElementById('fUnitValue');
@@ -932,14 +1149,146 @@ setActiveTab('townhall');
       modality,
       logHistory: 'Self-registered: ' + qty + ' ' + (modality === 'Labor' || modality === 'Expert Advisory' ? 'hrs' : 'units') + ' pending field verification',
       valueUSD: est, points: est,
+      phone: fPhone.value.trim(),
+      district: fDistrict.value,
+      status: 'Pending Verification',
+      dateRegistered: todayStr(),
     });
+    persistVolunteers();
     selectedId = newId;
     e.target.reset();
     updateEstimate();
     closeIntakeModal();
     render();
+    refreshAll();
   });
 
+  registerRefresh('registry', render);
+  render();
+})();
+
+/* ================= TAB: Attendance ================= */
+(function initAttendance() {
+  const el = document.getElementById('panel-attendance');
+  el.innerHTML = `
+    <div class="section-head">
+      <div class="eyebrow">Field Verification Log</div>
+      <h2>Daily Attendance &amp; Presence Tracking</h2>
+      <p>Admins mark daily presence for registered volunteers, contractors, and field teams. Attendance builds the verified log history behind each VGIS profile.</p>
+    </div>
+
+    <div class="grid" style="grid-template-columns:repeat(4,1fr); margin-bottom:20px;" id="attendanceStats"></div>
+
+    <div class="card table-scroll">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+        <h3 class="card-title" style="margin-bottom:0;">${icon('calendar')} Today's Roster — <span id="attendanceDate"></span></h3>
+        <div class="locked-note" id="attendanceLockNote"></div>
+      </div>
+      <table>
+        <thead><tr><th>Volunteer</th><th>Category</th><th>Modality</th><th style="text-align:right;">Today's Status</th><th style="text-align:right;">Mark</th></tr></thead>
+        <tbody id="attendanceBody"></tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3 class="card-title" style="margin-bottom:14px;">${icon('clipboard')} Attendance History Log</h3>
+      <div class="stack" style="gap:8px; max-height:320px; overflow-y:auto;" id="attendanceHistory"></div>
+    </div>
+  `;
+  document.getElementById('attendanceDate').textContent = todayStr();
+
+  function todayRecord(volunteerId) {
+    return attendance.find(a => a.volunteerId === volunteerId && a.date === todayStr());
+  }
+
+  function markAttendance(volunteerId, volunteerName, status) {
+    if (!isAdmin()) return;
+    const existing = todayRecord(volunteerId);
+    const time = new Date().toLocaleTimeString();
+    if (existing) {
+      existing.status = status;
+      existing.time = time;
+      existing.markedBy = adminSession.name;
+    } else {
+      attendance.unshift({ id: Date.now() + '-' + volunteerId, volunteerId, volunteerName, date: todayStr(), status, time, markedBy: adminSession.name });
+    }
+    persistAttendance();
+    render();
+  }
+
+  function renderStats() {
+    const todays = attendance.filter(a => a.date === todayStr());
+    const present = todays.filter(a => a.status === 'Present').length;
+    const late = todays.filter(a => a.status === 'Late').length;
+    const absent = todays.filter(a => a.status === 'Absent').length;
+    const total = volunteers.length;
+    const rate = total ? Math.round(((present + late) / total) * 100) : 0;
+    document.getElementById('attendanceStats').innerHTML = `
+      <div class="stat-box"><div class="k">Total Volunteers</div><div class="v tabular">${fmtNum(total)}</div></div>
+      <div class="stat-box" style="border-color:rgba(16,185,129,0.3);"><div class="k">Present Today</div><div class="v tabular" style="color:var(--success);">${fmtNum(present)}</div></div>
+      <div class="stat-box" style="border-color:rgba(245,158,11,0.3);"><div class="k">Late Today</div><div class="v tabular" style="color:var(--accent);">${fmtNum(late)}</div></div>
+      <div class="stat-box" style="border-color:rgba(248,113,113,0.3);"><div class="k">Absent Today</div><div class="v tabular" style="color:var(--danger);">${fmtNum(absent)}</div></div>
+    `;
+  }
+
+  function renderRoster() {
+    const body = document.getElementById('attendanceBody');
+    const admin = isAdmin();
+    document.getElementById('attendanceLockNote').innerHTML = admin ? '' : icon('lock') + ' Log in as an admin to mark attendance';
+    body.innerHTML = volunteers.map(v => {
+      const rec = todayRecord(v.id);
+      const status = rec ? rec.status : 'Not Marked';
+      const cls = status === 'Present' ? 'present' : status === 'Late' ? 'late' : status === 'Absent' ? 'absent' : 'notmarked';
+      const catLabel = (CATEGORIES.find(c => c.id === v.category) || {}).label || v.category;
+      return `<tr>
+        <td style="color:var(--text); font-weight:600;">${v.name}</td>
+        <td style="color:var(--text-muted);">${catLabel}</td>
+        <td>${v.modality}</td>
+        <td style="text-align:right;"><span class="pill ${cls}">${status}</span></td>
+        <td>
+          <div class="mark-btns">
+            <button class="mark-btn present" data-id="${v.id}" data-status="Present" ${admin ? '' : 'disabled'}>${icon('checkcircle')} Present</button>
+            <button class="mark-btn late" data-id="${v.id}" data-status="Late" ${admin ? '' : 'disabled'}>${icon('clock')} Late</button>
+            <button class="mark-btn absent" data-id="${v.id}" data-status="Absent" ${admin ? '' : 'disabled'}>${icon('slash')} Absent</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join('');
+    body.querySelectorAll('.mark-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const v = volunteers.find(x => x.id === btn.dataset.id);
+        if (v) markAttendance(v.id, v.name, btn.dataset.status);
+      });
+    });
+  }
+
+  function renderHistory() {
+    const historyEl = document.getElementById('attendanceHistory');
+    const entries = attendance.slice(0, 20);
+    if (entries.length === 0) {
+      historyEl.innerHTML = '<div class="alert-log-empty">No attendance marked yet.</div>';
+      return;
+    }
+    historyEl.innerHTML = entries.map(a => {
+      const color = a.status === 'Present' ? 'var(--success)' : a.status === 'Late' ? 'var(--accent)' : 'var(--danger)';
+      const ic = a.status === 'Present' ? 'checkcircle' : a.status === 'Late' ? 'clock' : 'slash';
+      return `<div class="attendance-history-entry">
+        <span style="color:${color};">${icon(ic)}</span>
+        <div>
+          <div><strong style="color:var(--text);">${a.volunteerName}</strong> — ${a.date} · ${a.time}</div>
+          <div style="color:var(--text-muted); margin-top:2px;">Marked <span style="color:${color}; font-weight:700;">${a.status}</span> by ${a.markedBy}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function render() {
+    renderStats();
+    renderRoster();
+    renderHistory();
+  }
+
+  registerRefresh('attendance', render);
   render();
 })();
 

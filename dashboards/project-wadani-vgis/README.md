@@ -30,17 +30,48 @@ registration modal, and the fraud-alert simulator work with zero setup.
    and a donation action panel (USSD `*880#`, Dahabshiil/Taaj, Swift wire).
 2. **Unified Volunteer Profiling & Registry Engine** — filterable volunteer
    table across the five contributor categories, full VGIS profile panel, and
-   a "New Registration" intake modal.
-3. **VGIS Core Calculator & Government Procurement Simulator** — the official
+   a "New Registration" intake modal capturing name, phone, district/site,
+   category, contribution modality, hours/quantity, and $ value. New
+   registrations start as **Pending Verification** until an admin verifies them.
+3. **Attendance** — a daily roster of every volunteer with Present/Late/Absent
+   marking, live today's-attendance stats, and a running attendance history
+   log. Marking attendance requires an admin login.
+4. **VGIS Core Calculator & Government Procurement Simulator** — the official
    economic valuation baseline grid, plus a live tender-scoring simulator
    (`Total Score = 0.70 × Tech/Fin + 0.30 × [Bidder VGIS / Max VGIS] × 100`)
    with tie-breaker logic.
-4. **Phase-1 Priority Projects Tracker** — progress bars and division-of-labor
+5. **Phase-1 Priority Projects Tracker** — progress bars and division-of-labor
    breakdowns for the Airport Rehabilitation and Laascaanood–Kalabaydh Highway
    Corridor sub-projects, plus a Hobbs-meter fleet tracker.
-5. **Integrity Code, Audit & Anti-Fraud Engine** — the Class A/B/C offense
+6. **Integrity Code, Audit & Anti-Fraud Engine** — the Class A/B/C offense
    matrix, an interactive NOV & appeals workflow diagram, and a live fraud
    alert simulator (`Points Deducted = Claimed Points × Penalty Multiplier`).
+
+## Admin login
+
+Both the React component and the standalone HTML file include a client-side
+demo admin login (top-right of the header). Verifying a pending registration
+and marking attendance both require being logged in.
+
+Demo accounts:
+
+| Username  | Password    | Role           |
+|-----------|-------------|----------------|
+| `admin`   | `wadani2026`| Super Admin    |
+| `auditor` | `laas2026`  | Field Auditor  |
+
+This is a **browser-side demo login only** — credentials are hard-coded in
+the client bundle, not checked against a server. It's meant to demonstrate
+the gating UX (who can verify registrations / mark attendance), not to
+provide real authentication. Wire it to a real auth backend before using
+this for anything beyond a demo.
+
+## Data persistence
+
+Both versions persist volunteers, attendance records, and the admin session
+to the browser's `localStorage`, so registrations, verifications, and
+attendance marks survive a page reload. Clearing site data / browser storage
+resets the dashboard back to the seed dataset.
 
 ## Using it in your app
 
@@ -61,7 +92,7 @@ export default function App() {
 }
 ```
 
-All data (volunteer registry, fleet tracker, header metrics) is seeded
-in-memory via `useState` for demonstration — wire it to a real API by
-replacing the `SEED_VOLUNTEERS`/`FLEET` constants and the intake modal's
-`onSubmit` handler with your backend calls.
+Volunteer, attendance, and admin-session state is seeded via `useState` and
+persisted to `localStorage` for demonstration — wire it to a real backend by
+replacing the `SEED_VOLUNTEERS`/`FLEET`/`ADMINS` constants and the
+`loadJSON`/`saveJSON` calls with your API and auth calls.
