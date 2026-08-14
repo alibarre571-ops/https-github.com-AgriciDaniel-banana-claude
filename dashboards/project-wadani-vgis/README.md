@@ -4,6 +4,9 @@ A single-file, fully interactive React dashboard for **PROJECT WADANI: Laascaano
 Civic Infrastructure & Volunteer Grading System (VGIS)** (North East State of
 Somalia).
 
+**Created by and copyright of Ali Suleiman Ali.**
+© 2026 Ali Suleiman Ali. All rights reserved.
+
 ## What's here
 
 - `ProjectWadaniDashboard.jsx` — the complete dashboard component (default export

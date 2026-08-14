@@ -44,6 +44,9 @@ import {
 /* -------------------------------------------------------------------------
  * PROJECT WADANI — Laascaanood Civic Infrastructure & Volunteer Grading
  * System (VGIS). Single-file interactive dashboard.
+ *
+ * Created by and copyright of Ali Suleiman Ali.
+ * © 2026 Ali Suleiman Ali. All rights reserved.
  * ---------------------------------------------------------------------- */
 
 const NAV_TABS = [
@@ -1772,7 +1775,10 @@ export default function ProjectWadaniDashboard() {
       </main>
 
       <footer className="border-t border-white/10 py-6 text-center text-xs text-gray-500">
-        PROJECT WADANI · Laascaanood Civic Infrastructure &amp; Volunteer Grading System — North East State of Somalia
+        <div>PROJECT WADANI · Laascaanood Civic Infrastructure &amp; Volunteer Grading System — North East State of Somalia</div>
+        <div className="mt-1.5 text-[11px] text-gray-600">
+          © 2026 Ali Suleiman Ali. All rights reserved. Created and copyrighted by Ali Suleiman Ali.
+        </div>
       </footer>
 
       <LoginModal open={loginModalOpen} onClose={() => setLoginModalOpen(false)} onLogin={handleLogin} />
