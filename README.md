@@ -33,6 +33,11 @@ Get a free Gemini API key at [Google AI Studio](https://aistudio.google.com/apik
 - `skills/banana/` -- the `/banana` skill (SKILL.md, reference docs, scripts)
 - `agents/brief-constructor.md` -- subagent used internally for prompt construction
 - `.claude-plugin/` -- plugin and marketplace manifests
+- `webapp/` -- [Banana Image Studio](webapp/README.md), a standalone deployable
+  web app (FastAPI + static frontend, Docker-ready) that exposes the same
+  Gemini image generation/editing as a website instead of a CLI/skill
+- `.github/workflows/ci.yml` -- CI: validates the plugin manifests and skill
+  scripts, and runs the webapp's test suite and Docker build on every push
 
 ## Source
 
