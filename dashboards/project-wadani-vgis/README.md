@@ -7,8 +7,21 @@ Somalia).
 ## What's here
 
 - `ProjectWadaniDashboard.jsx` — the complete dashboard component (default export
-  `ProjectWadaniDashboard`). No other files are required; all sub-components,
-  seed data, and formulas live in this one file.
+  `ProjectWadaniDashboard`) for use inside a React + Tailwind + lucide-react
+  project. All sub-components, seed data, and formulas live in this one file.
+- `dashboard-standalone.html` — the same dashboard as a **plain HTML file with
+  no dependencies**. Download it and double-click to open in any browser —
+  no Node, no npm install, no build step, works fully offline. This is the
+  fastest way to run the dashboard locally; it reimplements the same data,
+  formulas, and interactions in vanilla JS/CSS (no React or lucide-react, so
+  it stays a single file you can just open).
+
+## Run it locally right now
+
+Download `dashboard-standalone.html` and open it directly in a browser
+(double-click it, or `open dashboard-standalone.html` / `xdg-open
+dashboard-standalone.html`). That's it — every tab, slider, calculator, the
+registration modal, and the fraud-alert simulator work with zero setup.
 
 ## Sections
 

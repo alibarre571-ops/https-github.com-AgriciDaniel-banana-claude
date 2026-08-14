@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Project Wadani</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --bg-page: #0F172A;
+    --bg-surface: #141F38;
+    --bg-surface-2: #1B2945;
+    --bg-inset: #0B1526;
+    --border: rgba(255,255,255,0.09);
+    --border-strong: rgba(255,255,255,0.16);
+    --text: #F8FAFC;
+    --text-muted: #94A3B8;
+    --text-faint: #64748B;
+    --accent: #F59E0B;
+    --accent-soft: rgba(245,158,11,0.13);
+    --accent-ink: #1C1203;
+    --success: #10B981;
+    --success-soft: rgba(16,185,129,0.13);
+    --danger: #F87171;
+    --danger-soft: rgba(248,113,113,0.13);
+    --info: #38BDF8;
+    --info-soft: rgba(56,189,248,0.13);
+    --violet: #A78BFA;
+    --radius: 16px;
+    --font-display: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --font-body: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg-page);
+    color: var(--text);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+  ::selection { background: var(--accent-soft); color: var(--accent); }
+
+  .tabular { font-variant-numeric: tabular-nums; }
+  .mono { font-family: var(--font-mono); }
+
+  a { color: inherit; }
+
+  /* ---------- Header ---------- */
+  header.app-header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    background: rgba(15,23,42,0.94);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  .header-inner {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 18px 24px 0;
+  }
+  .brand-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .brand-mark {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .brand-text .eyebrow {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+  .brand-text .title {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 20px;
+    letter-spacing: 0.01em;
+    color: var(--text);
+  }
+  .brand-text .title em {
+    font-style: normal;
+    color: var(--accent);
+  }
+
+  .metrics-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .metric-tile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 9px 14px;
+    min-width: 168px;
+  }
+  .metric-tile .icon-wrap {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .metric-tile .icon-wrap svg { width: 16px; height: 16px; }
+  .metric-tile .label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+  }
+  .metric-tile .value {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: 15px;
+    color: var(--text);
+  }
+
+  nav.tab-rail {
+    max-width: 1240px;
+    margin: 16px auto 0;
+    padding: 14px 24px 14px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .tab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--text-muted);
+    font: inherit;
+    font-weight: 600;
+    font-size: 13.5px;
+    padding: 9px 16px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background .15s ease, color .15s ease;
+  }
+  .tab-btn svg { width: 15px; height: 15px; }
+  .tab-btn:hover { background: rgba(255,255,255,0.05); color: var(--text); }
+  .tab-btn[aria-selected="true"] {
+    background: var(--accent);
+    color: var(--accent-ink);
+  }
+
+  /* ---------- Layout ---------- */
+  main {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 32px 24px 64px;
+  }
+  .panel { display: none; }
+  .panel.active { display: block; animation: fade .25s ease; }
+  @media (prefers-reduced-motion: reduce) { .panel.active { animation: none; } }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  .section-head {
+    border-left: 3px solid var(--accent);
+    padding-left: 16px;
+    margin-bottom: 26px;
+  }
+  .section-head .eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+  .section-head h2 {
+    font-family: var(--font-display);
+    font-size: 24px;
+    font-weight: 800;
+    margin: 4px 0 6px;
+    color: var(--text);
+    text-wrap: balance;
+  }
+  .section-head p {
+    color: var(--text-muted);
+    font-size: 14px;
+    max-width: 720px;
+    margin: 0;
+  }
+
+  .card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px;
+  }
+  .card + .card { margin-top: 20px; }
+  .grid { display: grid; gap: 20px; }
+  .grid-2 { grid-template-columns: repeat(2, minmax(0,1fr)); }
+  .grid-3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
+  @media (max-width: 880px) { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+
+  .stack { display: flex; flex-direction: column; gap: 18px; }
+  .hero-band {
+    background: linear-gradient(120deg, #0F172A, #1B2945 55%, #0F172A);
+    border: 1px solid var(--accent-soft);
+    border-radius: 20px;
+    padding: 28px 30px;
+    margin-bottom: 28px;
+  }
+  .hero-band .eyebrow { color: var(--accent); font-weight: 700; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
+  .hero-band h1 { font-family: var(--font-display); font-size: 26px; margin: 8px 0 8px; text-wrap: balance; }
+  .hero-band p { color: var(--text-muted); font-size: 14px; max-width: 680px; margin: 0; }
+
+  h3.card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+    margin: 0 0 4px;
+  }
+  h3.card-title svg { width: 17px; height: 17px; color: var(--accent); }
+  .card-sub { color: var(--text-muted); font-size: 13px; margin: 0 0 18px; }
+
+  ul.plain { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13.5px; color: #CBD5E1; }
+
+  .btn {
+    font: inherit;
+    font-weight: 700;
+    font-size: 13px;
+    border-radius: 10px;
+    border: 1px solid var(--border-strong);
+    background: transparent;
+    color: var(--text-muted);
+    padding: 9px 15px;
+    cursor: pointer;
+    transition: all .15s ease;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--text); }
+  .btn.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .btn.active.alt-success { background: var(--success); border-color: var(--success); color: #062019; }
+  .btn.active.alt-danger { background: var(--danger); border-color: var(--danger); color: #2A0A0A; }
+  .btn-solid {
+    background: var(--accent);
+    color: var(--accent-ink);
+    border: none;
+    padding: 11px 18px;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .btn-solid.success { background: var(--success); color: #062019; }
+  .btn-solid.danger { background: var(--danger); color: #2A0A0A; width: 100%; justify-content: center; }
+  .btn-solid:hover { filter: brightness(1.08); }
+  .btn-solid svg, .btn.chip svg { width: 14px; height: 14px; }
+
+  input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent);
+  }
+  input[type="text"], input[type="number"], select {
+    width: 100%;
+    background: var(--bg-inset);
+    border: 1px solid var(--border-strong);
+    color: var(--text);
+    border-radius: 9px;
+    padding: 9px 12px;
+    font: inherit;
+    font-size: 13.5px;
+  }
+  input:focus, select:focus { outline: none; border-color: var(--accent); }
+  label.field-label {
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 6px;
+  }
+  .field-row { display: flex; justify-content: space-between; font-size: 13.5px; color: #CBD5E1; margin-bottom: 6px; }
+  .field-row .val { color: var(--text); font-weight: 700; }
+  .range-minmax { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-faint); margin-top: 2px; }
+
+  .stat-box {
+    background: var(--bg-inset);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 16px;
+  }
+  .stat-box .k { font-size: 10.5px; text-transform: uppercase; letter-spacing: .07em; color: var(--text-muted); }
+  .stat-box .v { font-family: var(--font-mono); font-size: 21px; font-weight: 700; margin-top: 4px; }
+
+  .progress { height: 10px; border-radius: 99px; background: rgba(255,255,255,0.08); overflow: hidden; }
+  .progress > span { display: block; height: 100%; border-radius: 99px; background: var(--success); transition: width .5s ease; }
+  .progress-row { display: flex; justify-content: space-between; font-size: 13px; color: #CBD5E1; margin-bottom: 6px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  thead th {
+    text-align: left;
+    font-size: 10.5px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 12px;
+  }
+  tbody td { padding: 11px 12px; border-bottom: 1px solid rgba(255,255,255,0.05); color: #E2E8F0; }
+  tbody tr { cursor: default; }
+  tbody tr.selectable { cursor: pointer; }
+  tbody tr.selectable:hover { background: rgba(255,255,255,0.03); }
+  tbody tr.selected { background: rgba(245,158,11,0.06); }
+  .table-scroll { overflow-x: auto; }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 99px;
+  }
+  .pill svg { width: 11px; height: 11px; }
+  .pill.platinum { background: rgba(226,232,240,0.14); color: #E2E8F0; }
+  .pill.gold { background: var(--accent-soft); color: var(--accent); }
+  .pill.silver { background: rgba(203,213,225,0.12); color: #CBD5E1; }
+  .pill.bronze { background: rgba(251,146,60,0.14); color: #FB923C; }
+  .pill.on { background: var(--success-soft); color: var(--success); }
+  .pill.idle { background: var(--accent-soft); color: var(--accent); }
+  .pill.maint { background: rgba(148,163,184,0.14); color: #CBD5E1; }
+
+  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; }
+
+  /* modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(3,7,18,0.72);
+    display: none; align-items: center; justify-content: center; padding: 20px; z-index: 60;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--bg-page);
+    border: 1px solid var(--border-strong);
+    border-radius: 18px;
+    padding: 26px;
+    width: 100%;
+    max-width: 480px;
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-close {
+    position: absolute; top: 18px; right: 18px;
+    background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px;
+  }
+  .modal-close:hover { color: var(--text); }
+  .modal-close svg { width: 18px; height: 18px; }
+
+  /* project cards */
+  .proj-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-bottom: 18px; }
+  .proj-id { display: flex; align-items: center; gap: 12px; }
+  .proj-icon { width: 42px; height: 42px; border-radius: 11px; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; }
+  .proj-icon svg { width: 20px; height: 20px; }
+  .proj-eyebrow { font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); }
+  .proj-title { font-family: var(--font-display); font-weight: 800; font-size: 17px; color: var(--text); }
+
+  /* offense cards */
+  .offense-card { border-radius: var(--radius); padding: 20px; border: 1px solid var(--border); background: rgba(255,255,255,0.02); }
+  .offense-card.a { border-color: rgba(16,185,129,0.35); background: var(--success-soft); }
+  .offense-card.b { border-color: rgba(245,158,11,0.35); background: var(--accent-soft); }
+  .offense-card.c { border-color: rgba(248,113,113,0.35); background: var(--danger-soft); }
+  .offense-badge { display: inline-block; font-size: 11px; font-weight: 800; padding: 4px 10px; border-radius: 99px; margin-bottom: 10px; }
+  .offense-card.a .offense-badge { background: rgba(16,185,129,0.2); color: var(--success); }
+  .offense-card.b .offense-badge { background: rgba(245,158,11,0.2); color: var(--accent); }
+  .offense-card.c .offense-badge { background: rgba(248,113,113,0.2); color: var(--danger); }
+  .offense-title { font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .offense-examples { font-size: 12.5px; color: var(--text-muted); line-height: 1.5; margin-bottom: 14px; }
+  .offense-meta { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; gap: 10px; }
+  .offense-meta span:first-child { color: var(--text-muted); }
+  .offense-meta span:last-child { color: var(--text); font-weight: 600; text-align: right; }
+
+  /* workflow */
+  .workflow-rail { display: flex; gap: 6px; flex-wrap: wrap; }
+  .workflow-step {
+    flex: 1 1 150px;
+    text-align: left;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px;
+    cursor: pointer;
+    color: inherit;
+    font: inherit;
+  }
+  .workflow-step .step-top { display: flex; align-items: center; gap: 7px; margin-bottom: 6px; }
+  .workflow-step .step-top svg { width: 14px; height: 14px; color: var(--text-muted); }
+  .workflow-step .step-num { font-size: 10.5px; font-weight: 700; color: var(--text-muted); letter-spacing: .05em; }
+  .workflow-step .step-title { font-size: 13px; font-weight: 700; color: #CBD5E1; }
+  .workflow-step.active { border-color: var(--accent); background: var(--accent-soft); }
+  .workflow-step.active .step-top svg { color: var(--accent); }
+  .workflow-step.active .step-title { color: var(--text); }
+  .workflow-detail { margin-top: 14px; background: var(--bg-inset); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; font-size: 13.5px; color: #CBD5E1; }
+
+  .alert-log-entry {
+    display: flex; gap: 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 12px; font-size: 12.5px;
+  }
+  .alert-log-entry svg { width: 14px; height: 14px; color: var(--danger); flex-shrink: 0; margin-top: 2px; }
+  .alert-log-empty { font-size: 12.5px; color: var(--text-faint); font-style: italic; }
+
+  footer.app-footer { border-top: 1px solid var(--border); padding: 26px 0; text-align: center; font-size: 12px; color: var(--text-faint); }
+
+  @media (max-width: 640px) {
+    .metrics-strip { display: none; }
+  }
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="header-inner">
+    <div class="brand-row">
+      <div class="brand">
+        <div class="brand-mark" data-icon="landmark"></div>
+        <div class="brand-text">
+          <div class="eyebrow">North East State of Somalia</div>
+          <div class="title">PROJECT WADANI <em>· VGIS</em></div>
+        </div>
+      </div>
+      <div class="metrics-strip">
+        <div class="metric-tile"><div class="icon-wrap" data-icon="coins" style="color:var(--accent)"></div><div><div class="label">Capital Raised</div><div class="value tabular">$4,820,000</div></div></div>
+        <div class="metric-tile"><div class="icon-wrap" data-icon="users" style="color:var(--success)"></div><div><div class="label">Active Volunteers</div><div class="value tabular">6,540</div></div></div>
+        <div class="metric-tile"><div class="icon-wrap" data-icon="route" style="color:var(--accent)"></div><div><div class="label">Km Paved</div><div class="value tabular">14.1 km</div></div></div>
+        <div class="metric-tile"><div class="icon-wrap" data-icon="plane" style="color:var(--success)"></div><div><div class="label">Runway Completion</div><div class="value tabular">61%</div></div></div>
+      </div>
+    </div>
+  </div>
+  <nav class="tab-rail" id="tabRail"></nav>
+</header>
+
+<main>
+  <section class="panel" id="panel-townhall"></section>
+  <section class="panel" id="panel-registry"></section>
+  <section class="panel" id="panel-vgis"></section>
+  <section class="panel" id="panel-projects"></section>
+  <section class="panel" id="panel-integrity"></section>
+</main>
+
+<footer class="app-footer">PROJECT WADANI · Laascaanood Civic Infrastructure &amp; Volunteer Grading System — North East State of Somalia</footer>
+
+<div class="modal-overlay" id="intakeModal">
+  <div class="modal-box">
+    <button class="modal-close" id="modalCloseBtn" aria-label="Close">${"" }</button>
+    <h3 class="card-title" style="margin-bottom:2px;"><span data-icon="plus"></span> New VGIS Registration</h3>
+    <p class="card-sub">Register assets, machinery hours, labor, or micro-pledges.</p>
+    <form id="intakeForm">
+      <div style="margin-bottom:14px;">
+        <label class="field-label">Full Name / Entity Name</label>
+        <input type="text" id="fName" required />
+      </div>
+      <div class="grid grid-2" style="gap:12px; margin-bottom:14px;">
+        <div>
+          <label class="field-label">Category</label>
+          <select id="fCategory"></select>
+        </div>
+        <div>
+          <label class="field-label">Contribution Modality</label>
+          <select id="fModality">
+            <option>Labor</option><option>Equipment</option><option>Fuel</option><option>Cash</option><option>Expert Advisory</option>
+          </select>
+        </div>
+      </div>
+      <div class="grid grid-2" style="gap:12px; margin-bottom:14px;">
+        <div>
+          <label class="field-label" id="fQtyLabel">Hours</label>
+          <input type="number" min="0" id="fQty" value="0" />
+        </div>
+        <div>
+          <label class="field-label">$ Value per Unit</label>
+          <input type="number" min="0" id="fUnitValue" value="0" />
+        </div>
+      </div>
+      <div class="stat-box" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <span style="font-size:12.5px; color:var(--text-muted);">Estimated Value / VGIS Points</span>
+        <span class="mono tabular" style="color:var(--accent); font-weight:700;" id="fEstimate">$0 · 0.0 pts</span>
+      </div>
+      <button type="submit" class="btn-solid" style="width:100%; justify-content:center;">Submit Registration for Field Verification</button>
+    </form>
+  </div>
+</div>
+
+<script>
+/* ---------------- Icon set (inline, lucide-inspired line icons) ---------------- */
+const ICONS = {
+  landmark: '<path d="M3 21h18"/><path d="M5 21V9l7-5 7 5v12"/><path d="M9 21v-6h6v6"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18"/>',
+  users: '<path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  calculator: '<rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="8" y2="10"/><line x1="12" y1="10" x2="12" y2="10"/><line x1="16" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="8" y2="14"/><line x1="12" y1="14" x2="12" y2="14"/><line x1="16" y1="14" x2="16" y2="18"/><line x1="8" y1="18" x2="8" y2="18"/><line x1="12" y1="18" x2="12" y2="18"/>',
+  route: '<circle cx="6" cy="19" r="2.5"/><circle cx="18" cy="5" r="2.5"/><path d="M8.3 19H15a4 4 0 0 0 4-4v-1a4 4 0 0 0-4-4H9a4 4 0 0 1-4-4v-1"/>',
+  shield: '<path d="M12 22s8-4 8-11V5l-8-3-8 3v6c0 7 8 11 8 11z"/>',
+  plane: '<path d="M2 16l20-6-4 6 4 6-20-6z" transform="translate(0,-1)"/><path d="M10.5 12.5L3 21l3-1 1.5-3"/>',
+  coins: '<circle cx="8" cy="8" r="6"/><path d="M18.09 10.37A6 6 0 1 1 10.34 18"/><path d="M7 6h1v4"/><path d="M16.71 13.88l.7.71-2.82 2.82"/>',
+  handcoins: '<path d="M11 15h2a2 2 0 1 0 0-4h-3c-.6 0-1.1.2-1.4.6L3 17"/><path d="M3 21l2-2"/><path d="M14 11l5-5"/><circle cx="18" cy="6" r="3"/>',
+  send: '<path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/>',
+  smartphone: '<rect x="6" y="2" width="12" height="20" rx="2"/><line x1="11" y1="18" x2="13" y2="18"/>',
+  wallet: '<path d="M3 7a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/><path d="M17 12h2"/>',
+  search: '<circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+  plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+  x: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+  award: '<circle cx="12" cy="8" r="6"/><path d="M8.5 13.5L7 22l5-3 5 3-1.5-8.5"/>',
+  gauge: '<path d="M12 15a3 3 0 1 0 0-6"/><path d="M12 15l3-4"/><path d="M4 15a8 8 0 0 1 16 0"/>',
+  trending: '<polyline points="3 17 9 11 13 15 21 6"/><polyline points="15 6 21 6 21 12"/>',
+  truck: '<rect x="1" y="7" width="14" height="10" rx="1"/><path d="M15 10h4l3 3v4h-7"/><circle cx="6" cy="19" r="2"/><circle cx="17" cy="19" r="2"/>',
+  layers: '<polygon points="12 2 2 8 12 14 22 8 12 2"/><polyline points="2 14 12 20 22 14"/><polyline points="2 11 12 17 22 11"/>',
+  fence: '<line x1="4" y1="4" x2="4" y2="20"/><line x1="10" y1="4" x2="10" y2="20"/><line x1="16" y1="4" x2="16" y2="20"/><line x1="1" y1="9" x2="19" y2="9"/><line x1="5" y1="15" x2="23" y2="15"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  building: '<rect x="4" y="2" width="16" height="20" rx="1"/><line x1="8" y1="6" x2="8" y2="6"/><line x1="12" y1="6" x2="12" y2="6"/><line x1="16" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="8" y2="10"/><line x1="12" y1="10" x2="12" y2="10"/><line x1="16" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="8" y2="14"/><line x1="12" y1="14" x2="12" y2="14"/><line x1="16" y1="14" x2="16" y2="14"/><line x1="10" y1="22" x2="10" y2="18"/><line x1="14" y1="18" x2="14" y2="22"/>',
+  clipboard: '<rect x="6" y="4" width="12" height="18" rx="2"/><path d="M9 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="15" y2="15"/>',
+  alert: '<path d="M12 2 1 21h22L12 2z"/><line x1="12" y1="9" x2="12" y2="14"/><line x1="12" y1="17.5" x2="12" y2="17.5"/>',
+  gavel: '<path d="M14 10l-8.5 8.5"/><path d="M2.5 21.5l4-4"/><path d="M8 6l6 6"/><path d="M13.5 1.5l9 9-3.5 3.5-9-9z"/>',
+  radio: '<circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49"/><path d="M7.76 16.24a6 6 0 0 1 0-8.49"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M4.93 19.07a10 10 0 0 1 0-14.14"/>',
+  filewarn: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="12" x2="12" y2="15"/><line x1="12" y1="18" x2="12" y2="18"/>',
+  clock: '<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/>',
+  chevron: '<polyline points="9 18 15 12 9 6"/>',
+  check: '<polyline points="20 6 9 17 4 12"/>',
+  graduation: '<path d="M2 9l10-5 10 5-10 5-10-5z"/><path d="M6 11v5c0 1.5 2.7 3 6 3s6-1.5 6-3v-5"/>',
+  briefcase: '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+  usercheck: '<circle cx="9" cy="7" r="4"/><path d="M2 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2"/><polyline points="17 11 19 13 23 9"/>',
+  filter: '<polygon points="4 3 20 3 14 12 14 19 10 21 10 12 4 3"/>',
+};
+function icon(name, extra) {
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ' + (extra || '') + '>' + (ICONS[name] || '') + '</svg>';
+}
+document.querySelectorAll('[data-icon]').forEach(el => { el.innerHTML = icon(el.dataset.icon); });
+document.getElementById('modalCloseBtn').innerHTML = icon('x');
+
+/* ---------------- Formatters ---------------- */
+const fmtUSD = n => '$' + Math.round(n).toLocaleString('en-US');
+const fmtNum = (n, d = 0) => Number(n).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
+
+/* ---------------- Data ---------------- */
+const ROAD_COST_PER_KM = 45000;
+const RUNWAY_COST_PER_KM = 1250000;
+
+const CATEGORIES = [
+  { id: 'citizens', label: 'Ordinary Citizens', icon: 'usercheck' },
+  { id: 'business', label: 'Registered Businesses', icon: 'briefcase' },
+  { id: 'diaspora', label: 'Diaspora Community', icon: 'globe' },
+  { id: 'education', label: 'Educational Institutions / Students', icon: 'graduation' },
+  { id: 'government', label: 'Government Workers / Experts', icon: 'building' },
+];
+
+const VALUATION_BASELINE = [
+  { activity: '1 Hour Unskilled Labor', usd: 2.5, points: 2.5 },
+  { activity: '1 Hour Skilled Trade', usd: 6.0, points: 6.0 },
+  { activity: '1 Hour Civil Engineer', usd: 20.0, points: 20.0 },
+  { activity: '1 Hour Heavy Machinery (Grader/Dozer)', usd: 65.0, points: 65.0 },
+  { activity: '1 Trip Haulage Gravel', usd: 40.0, points: 40.0 },
+  { activity: '$1 USD Cash / Micro-donation', usd: 1.0, points: 1.0 },
+];
+
+let volunteers = [
+  { id: 'VGIS-LS-2026-0102', name: 'Xasan Cabdi Warsame', category: 'citizens', entityType: 'Individual Citizen', modality: 'Labor', logHistory: '42 hrs unskilled labor, box-culvert excavation, Kalabaydh corridor', valueUSD: 105, points: 105 },
+  { id: 'VGIS-LS-2026-0087', name: 'Golis Construction & Trading Co.', category: 'business', entityType: 'Registered Business', modality: 'Equipment', logHistory: '1 Grader logged 60 Hobbs hrs, Kalabaydh corridor DBST works', valueUSD: 3900, points: 3900 },
+  { id: 'VGIS-LS-2026-0451', name: 'Sahra M. Egal (Toronto Chapter)', category: 'diaspora', entityType: 'Diaspora Donor', modality: 'Cash', logHistory: 'Monthly VGIS pledge, 14 consecutive months, USSD + Swift', valueUSD: 1400, points: 1400 },
+  { id: 'VGIS-LS-2026-0512', name: 'Laascaanood Polytechnic — Civil Eng. Brigade', category: 'education', entityType: 'Educational Institution', modality: 'Labor', logHistory: '310 student-hours, interlocking cobblestone paving brigades', valueUSD: 775, points: 775 },
+  { id: 'VGIS-LS-2026-0033', name: 'Eng. Faysal Nur Jibril', category: 'government', entityType: 'Government Civil Engineer', modality: 'Expert Advisory', logHistory: '220 hrs airport runway leveling design & site supervision', valueUSD: 4400, points: 4400 },
+  { id: 'VGIS-LS-2026-0210', name: 'Nomad Fuel & Logistics', category: 'business', entityType: 'Registered Business', modality: 'Fuel', logHistory: '6,200L diesel donated, runway rehabilitation fleet', valueUSD: 8680, points: 8680 },
+  { id: 'VGIS-LS-2026-0668', name: 'Amina H. Farah', category: 'citizens', entityType: 'Individual Citizen', modality: 'Labor', logHistory: '18 hrs unskilled labor, security fence trenching', valueUSD: 45, points: 45 },
+  { id: 'VGIS-LS-2026-0729', name: 'Waqooyi Galbeed Diaspora Assoc. (Oslo)', category: 'diaspora', entityType: 'Diaspora Group', modality: 'Cash', logHistory: 'Bulk 1:1 matched sponsorship, solar night-landing lights unit', valueUSD: 22000, points: 22000 },
+  { id: 'VGIS-LS-2026-0355', name: 'Ministry of Public Works — Field Unit 3', category: 'government', entityType: 'Government Expert Team', modality: 'Expert Advisory', logHistory: 'Quality assurance inspections, 12 site audits', valueUSD: 2640, points: 2640 },
+  { id: 'VGIS-LS-2026-0894', name: 'SSC Youth Volunteer Corps — Batch 4', category: 'education', entityType: 'Student Brigade', modality: 'Labor', logHistory: '540 student-hours, cobblestone & terminal grounds works', valueUSD: 1350, points: 1350 },
+];
+
+const FLEET = [
+  { id: 'BUS-004', type: 'Grader', project: 'Kalabaydh Corridor', hobbsHrs: 612.4, status: 'Active' },
+  { id: 'BUS-011', type: 'Dump Truck', project: 'Kalabaydh Corridor', hobbsHrs: 388.1, status: 'Active' },
+  { id: 'BUS-019', type: 'Roller', project: 'Kalabaydh Corridor', hobbsHrs: 204.7, status: 'Idle' },
+  { id: 'BUS-002', type: 'Dozer', project: 'Airport Runway', hobbsHrs: 501.9, status: 'Active' },
+  { id: 'BUS-027', type: 'Water Bowser', project: 'Airport Runway', hobbsHrs: 96.3, status: 'Maintenance' },
+];
+
+const OFFENSE_CLASSES = [
+  { cls: 'Class A', tone: 'a', title: 'Administrative Discrepancies', examples: 'Late log submission, minor paperwork errors, mismatched timestamps', penalty: 'Formal warning issued', clawback: '0% point loss' },
+  { cls: 'Class B', tone: 'b', title: 'Wilful Misrepresentation', examples: 'Equipment idle logging, phantom rosters, inflated hours', penalty: '30-day to 6-month suspension', clawback: '3x–5x point clawback' },
+  { cls: 'Class C', tone: 'c', title: 'Hobbs Meter Tampering / Bribery / System Fraud', examples: 'Meter tampering, bribery of auditors, coordinated fraud rings', penalty: 'Permanent blacklist + criminal referral', clawback: '100% account wipeout' },
+];
+
+const WORKFLOW_STEPS = [
+  { step: 1, title: 'Automated / Whistleblower Flag', icon: 'radio', desc: 'System anomaly detection or a whistleblower report triggers an initial flag on a volunteer or contractor record.' },
+  { step: 2, title: 'Field Investigation & Escrow Lock', icon: 'search', desc: 'A field auditor is dispatched. Related VGIS points and pending disbursements are locked in escrow pending findings.' },
+  { step: 3, title: 'NOV Issuance', icon: 'filewarn', desc: 'A formal Notice of Violation (NOV) is issued to the flagged party, citing offense class and evidence.' },
+  { step: 4, title: '14-Day Appeal Window', icon: 'clock', desc: 'The flagged party has 14 calendar days to submit an appeal with supporting documentation.' },
+  { step: 5, title: 'Final Binding Determination', icon: 'gavel', desc: 'The Integrity Board issues a final, binding ruling: dismissal, clawback, suspension, or blacklist.' },
+];
+
+function tierFor(points) {
+  if (points >= 10000) return { name: 'Platinum', cls: 'platinum' };
+  if (points >= 5000) return { name: 'Gold', cls: 'gold' };
+  if (points >= 1500) return { name: 'Silver', cls: 'silver' };
+  return { name: 'Bronze', cls: 'bronze' };
+}
+
+/* ---------------- Tab navigation ---------------- */
+const TABS = [
+  { id: 'townhall', label: 'Diaspora Town Hall', icon: 'globe' },
+  { id: 'registry', label: 'Volunteer Registry', icon: 'users' },
+  { id: 'vgis', label: 'VGIS Core Calculator', icon: 'calculator' },
+  { id: 'projects', label: 'Priority Projects', icon: 'route' },
+  { id: 'integrity', label: 'Integrity & Audit', icon: 'shield' },
+];
+
+const tabRail = document.getElementById('tabRail');
+TABS.forEach(t => {
+  const btn = document.createElement('button');
+  btn.className = 'tab-btn';
+  btn.setAttribute('role', 'tab');
+  btn.dataset.tab = t.id;
+  btn.innerHTML = icon(t.icon) + '<span>' + t.label + '</span>';
+  btn.addEventListener('click', () => setActiveTab(t.id));
+  tabRail.appendChild(btn);
+});
+
+function setActiveTab(id) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === id)));
+  document.querySelectorAll('.panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + id));
+}
+setActiveTab('townhall');
+
+/* ================= TAB 1: Town Hall ================= */
+(function initTownHall() {
+  const el = document.getElementById('panel-townhall');
+  el.innerHTML = `
+    <div class="hero-band">
+      <div class="eyebrow">VGIS Micro-Donation & Sponsorship Framework</div>
+      <h1>Global Diaspora Town Hall &amp; VGIS Sponsorship Model</h1>
+      <p>Converting scattered diaspora remittances into a pooled, 1:1-matched capital engine for Laascaanood's Phase-1 civic infrastructure.</p>
+    </div>
+    <div class="grid grid-2">
+      <div class="card" style="border-color:rgba(248,113,113,0.25);">
+        <h3 class="card-title" style="color:var(--danger);">${icon('send')} Traditional 1-to-1 Remittances</h3>
+        <ul class="plain" style="margin-top:14px;">
+          <li>• High transaction friction &amp; per-transfer fees</li>
+          <li>• Funds absorbed into individual household consumer spending</li>
+          <li>• No pooling — zero collective bargaining or matching power</li>
+          <li>• No traceability into public infrastructure outcomes</li>
+        </ul>
+      </div>
+      <div class="card" style="border-color:rgba(16,185,129,0.3);">
+        <h3 class="card-title" style="color:var(--success);">${icon('handcoins')} VGIS Collective Capital</h3>
+        <ul class="plain" style="margin-top:14px;">
+          <li>• Pooled diaspora capital, aggregated monthly</li>
+          <li>• 1:1 institutional / partner matching multiplier</li>
+          <li>• Ring-fenced for Phase-1 infrastructure disbursement only</li>
+          <li>• Full VGIS ledger traceability, per-km funding attribution</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 class="card-title">${icon('calculator')} Interactive Micro-Donation Calculator</h3>
+      <p class="card-sub">Model the collective capital pool generated by the diaspora base.</p>
+      <div class="grid grid-2">
+        <div class="stack">
+          <div>
+            <label class="field-label">Monthly Pledge per Donor</label>
+            <div class="chip-row" id="pledgeChips"></div>
+            <input type="number" min="0" id="customPledge" placeholder="Enter custom monthly pledge ($)" style="display:none; margin-top:10px;" />
+          </div>
+          <div>
+            <div class="field-row"><span>Number of Diaspora Donors</span><span class="val tabular" id="donorsVal">8,000</span></div>
+            <input type="range" id="donorsSlider" min="1000" max="50000" step="500" value="8000" />
+            <div class="range-minmax"><span>1,000</span><span>50,000</span></div>
+          </div>
+        </div>
+        <div class="grid" style="grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="stat-box" style="grid-column: span 2;">
+            <div class="k">Annual Capital Pool Generated</div>
+            <div class="v tabular" id="annualPool">$0</div>
+          </div>
+          <div class="stat-box" style="grid-column: span 2; border-color:rgba(16,185,129,0.3);">
+            <div class="k">1:1 Matched Value (Total Deployable)</div>
+            <div class="v tabular" id="matchedPool" style="color:var(--success);">$0</div>
+          </div>
+          <div class="stat-box">
+            <div class="k">Km of Road Funded</div>
+            <div class="v tabular" id="roadKm" style="color:var(--accent); font-size:18px;">0 km</div>
+          </div>
+          <div class="stat-box">
+            <div class="k">Km of Runway Funded</div>
+            <div class="v tabular" id="runwayKm" style="color:var(--accent); font-size:18px;">0 km</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 class="card-title" style="margin-bottom:16px;">Donation Action Panel</h3>
+      <div class="grid grid-3">
+        <div style="display:flex; gap:12px;">
+          <div style="color:var(--accent); flex-shrink:0;">${icon('smartphone')}</div>
+          <div><div style="font-weight:700; font-size:13.5px;">USSD</div><div style="font-size:12px; color:var(--text-muted); margin-top:3px;">Dial <span class="mono" style="color:var(--accent);">*880#</span> from any Somali carrier and follow the VGIS pledge menu.</div></div>
+        </div>
+        <div style="display:flex; gap:12px;">
+          <div style="color:var(--accent); flex-shrink:0;">${icon('wallet')}</div>
+          <div><div style="font-weight:700; font-size:13.5px;">Mobile Money</div><div style="font-size:12px; color:var(--text-muted); margin-top:3px;">Dahabshiil eDahab &amp; Taaj — Merchant code <span class="mono" style="color:var(--accent);">VGIS-LAS-01</span>.</div></div>
+        </div>
+        <div style="display:flex; gap:12px;">
+          <div style="color:var(--accent); flex-shrink:0;">${icon('landmark')}</div>
+          <div><div style="font-weight:700; font-size:13.5px;">Swift Wire</div><div style="font-size:12px; color:var(--text-muted); margin-top:3px;">Institutional / bulk sponsorship transfers via SWIFT to the VGIS Capital Escrow Account.</div></div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const pledgeChips = document.getElementById('pledgeChips');
+  const options = [5, 25, 50, 100, 'custom'];
+  let pledge = 25;
+  let custom = 0;
+  const customInput = document.getElementById('customPledge');
+
+  options.forEach(opt => {
+    const b = document.createElement('button');
+    b.className = 'btn chip' + (opt === pledge ? ' active' : '');
+    b.textContent = opt === 'custom' ? 'Custom' : '$' + opt;
+    b.addEventListener('click', () => {
+      pledge = opt;
+      pledgeChips.querySelectorAll('button').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      customInput.style.display = opt === 'custom' ? 'block' : 'none';
+      recalc();
+    });
+    pledgeChips.appendChild(b);
+  });
+  pledgeChips.children[1].classList.add('active'); // $25 default
+
+  customInput.addEventListener('input', e => { custom = Number(e.target.value) || 0; recalc(); });
+
+  const donorsSlider = document.getElementById('donorsSlider');
+  donorsSlider.addEventListener('input', recalc);
+
+  function recalc() {
+    const donors = Number(donorsSlider.value);
+    document.getElementById('donorsVal').textContent = fmtNum(donors);
+    const monthly = pledge === 'custom' ? custom : pledge;
+    const annual = monthly * 12 * donors;
+    const matched = annual * 2;
+    document.getElementById('annualPool').textContent = fmtUSD(annual);
+    document.getElementById('matchedPool').textContent = fmtUSD(matched);
+    document.getElementById('roadKm').textContent = fmtNum(matched / ROAD_COST_PER_KM, 1) + ' km';
+    document.getElementById('runwayKm').textContent = fmtNum(matched / RUNWAY_COST_PER_KM, 2) + ' km';
+  }
+  recalc();
+})();
+
+/* ================= TAB 2: Registry ================= */
+(function initRegistry() {
+  const el = document.getElementById('panel-registry');
+  el.innerHTML = `
+    <div class="section-head">
+      <div class="eyebrow">VGIS Registry Engine</div>
+      <h2>Unified Volunteer Profiling &amp; Registry</h2>
+      <p>Every citizen, business, diaspora donor, institution, and government expert contributing to Project WADANI is logged under a single verified VGIS profile.</p>
+    </div>
+    <div style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px;">
+      <div class="chip-row" id="categoryChips"></div>
+      <button class="btn-solid success" id="openIntakeBtn">${icon('plus')} New Registration</button>
+    </div>
+    <div style="position:relative; max-width:380px; margin-bottom:20px;">
+      <div style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-faint);">${icon('search')}</div>
+      <input type="text" id="searchInput" placeholder="Search by name or System ID…" style="padding-left:36px;" />
+    </div>
+    <div class="grid" style="grid-template-columns: 2fr 1fr;">
+      <div class="card table-scroll" style="padding:0;">
+        <table>
+          <thead><tr><th>System ID</th><th>Name</th><th>Modality</th><th style="text-align:right;">Value ($)</th><th style="text-align:right;">Tier</th></tr></thead>
+          <tbody id="registryBody"></tbody>
+        </table>
+      </div>
+      <div class="card" id="profilePanel"></div>
+    </div>
+  `;
+
+  const categoryChips = document.getElementById('categoryChips');
+  let categoryFilter = 'all';
+  let selectedId = volunteers[0].id;
+  let search = '';
+
+  const allBtn = document.createElement('button');
+  allBtn.className = 'btn chip active';
+  allBtn.textContent = 'All Categories';
+  allBtn.addEventListener('click', () => { categoryFilter = 'all'; refreshChips(); render(); });
+  categoryChips.appendChild(allBtn);
+
+  CATEGORIES.forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'btn chip';
+    b.innerHTML = icon(c.icon) + '<span>' + c.label + '</span>';
+    b.addEventListener('click', () => { categoryFilter = c.id; refreshChips(); render(); });
+    categoryChips.appendChild(b);
+  });
+
+  function refreshChips() {
+    Array.from(categoryChips.children).forEach((b, i) => {
+      const isActive = (i === 0 && categoryFilter === 'all') || (i > 0 && CATEGORIES[i - 1].id === categoryFilter);
+      b.classList.toggle('active', isActive);
+    });
+  }
+
+  document.getElementById('searchInput').addEventListener('input', e => { search = e.target.value; render(); });
+  document.getElementById('openIntakeBtn').addEventListener('click', openIntakeModal);
+
+  function filteredList() {
+    return volunteers.filter(v => {
+      const matchesCat = categoryFilter === 'all' || v.category === categoryFilter;
+      const s = search.toLowerCase();
+      const matchesSearch = !s || v.name.toLowerCase().includes(s) || v.id.toLowerCase().includes(s);
+      return matchesCat && matchesSearch;
+    });
+  }
+
+  function render() {
+    const list = filteredList();
+    const body = document.getElementById('registryBody');
+    if (list.length === 0) {
+      body.innerHTML = '<tr><td colspan="5" style="text-align:center; color:var(--text-faint); padding:32px;">No records match this filter.</td></tr>';
+    } else {
+      body.innerHTML = list.map(v => {
+        const tier = tierFor(v.points);
+        const isSel = v.id === selectedId;
+        return `<tr class="selectable${isSel ? ' selected' : ''}" data-id="${v.id}">
+          <td class="mono" style="font-size:11.5px; color:var(--text-faint);">${v.id}</td>
+          <td style="color:var(--text); font-weight:600;">${v.name}</td>
+          <td>${v.modality}</td>
+          <td class="tabular" style="text-align:right;">${fmtUSD(v.valueUSD)}</td>
+          <td style="text-align:right;"><span class="pill ${tier.cls}">${icon('award')} ${tier.name}</span></td>
+        </tr>`;
+      }).join('');
+      body.querySelectorAll('tr[data-id]').forEach(tr => {
+        tr.addEventListener('click', () => { selectedId = tr.dataset.id; render(); });
+      });
+    }
+    renderProfile(list);
+  }
+
+  function renderProfile(list) {
+    const panel = document.getElementById('profilePanel');
+    const selected = volunteers.find(v => v.id === selectedId) || list[0];
+    if (!selected) { panel.innerHTML = '<div style="color:var(--text-faint); font-size:13.5px;">Select a record to view its full VGIS profile.</div>'; return; }
+    const tier = tierFor(selected.points);
+    panel.innerHTML = `
+      <div class="mono" style="font-size:11px; color:var(--text-faint);">${selected.id}</div>
+      <div style="font-size:17px; font-weight:800; color:var(--text); margin-top:4px;">${selected.name}</div>
+      <div style="font-size:11.5px; color:var(--accent); font-weight:700; margin-top:2px;">${selected.entityType}</div>
+      <div style="margin-top:16px; display:flex; flex-direction:column; gap:12px; font-size:13.5px;">
+        <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:10px;"><span style="color:var(--text-muted);">Contribution Modality</span><span style="font-weight:600;">${selected.modality}</span></div>
+        <div style="border-bottom:1px solid var(--border); padding-bottom:10px;"><div style="color:var(--text-muted); margin-bottom:4px;">Verified Log History &amp; Output</div><div style="font-size:12px; color:#CBD5E1; line-height:1.5;">${selected.logHistory}</div></div>
+        <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:10px;"><span style="color:var(--text-muted);">Economic Value Equivalent</span><span class="tabular" style="color:var(--success); font-weight:700;">${fmtUSD(selected.valueUSD)}</span></div>
+        <div style="display:flex; justify-content:space-between; border-bottom:1px solid var(--border); padding-bottom:10px;"><span style="color:var(--text-muted);">VGIS Points Earned</span><span class="tabular" style="font-weight:700;">${fmtNum(selected.points, 1)}</span></div>
+        <div style="display:flex; justify-content:space-between; align-items:center;"><span style="color:var(--text-muted);">Dynamic Tier Grade</span><span class="pill ${tier.cls}" style="font-size:12px; padding:5px 12px;">${icon('award')} ${tier.name}</span></div>
+      </div>
+    `;
+  }
+
+  /* Intake modal wiring */
+  const fCategory = document.getElementById('fCategory');
+  CATEGORIES.forEach(c => {
+    const opt = document.createElement('option');
+    opt.value = c.id; opt.textContent = c.label;
+    fCategory.appendChild(opt);
+  });
+  const fModality = document.getElementById('fModality');
+  const fQty = document.getElementById('fQty');
+  const fUnitValue = document.getElementById('fUnitValue');
+  const fEstimate = document.getElementById('fEstimate');
+  const fQtyLabel = document.getElementById('fQtyLabel');
+
+  function updateEstimate() {
+    const est = (Number(fQty.value) || 0) * (Number(fUnitValue.value) || 0);
+    fEstimate.textContent = fmtUSD(est) + ' · ' + fmtNum(est, 1) + ' pts';
+    fQtyLabel.textContent = (fModality.value === 'Labor' || fModality.value === 'Expert Advisory') ? 'Hours' : 'Quantity / Units';
+  }
+  fQty.addEventListener('input', updateEstimate);
+  fUnitValue.addEventListener('input', updateEstimate);
+  fModality.addEventListener('change', updateEstimate);
+
+  function openIntakeModal() { document.getElementById('intakeModal').classList.add('open'); }
+  function closeIntakeModal() { document.getElementById('intakeModal').classList.remove('open'); }
+  document.getElementById('modalCloseBtn').addEventListener('click', closeIntakeModal);
+  document.getElementById('intakeModal').addEventListener('click', e => { if (e.target.id === 'intakeModal') closeIntakeModal(); });
+
+  document.getElementById('intakeForm').addEventListener('submit', e => {
+    e.preventDefault();
+    const name = document.getElementById('fName').value.trim();
+    if (!name) return;
+    const qty = Number(fQty.value) || 0;
+    const unitValue = Number(fUnitValue.value) || 0;
+    const est = qty * unitValue;
+    const newId = 'VGIS-LS-2026-' + Math.floor(1000 + Math.random() * 8999);
+    const category = fCategory.value;
+    const modality = fModality.value;
+    volunteers.unshift({
+      id: newId, name, category,
+      entityType: CATEGORIES.find(c => c.id === category).label,
+      modality,
+      logHistory: 'Self-registered: ' + qty + ' ' + (modality === 'Labor' || modality === 'Expert Advisory' ? 'hrs' : 'units') + ' pending field verification',
+      valueUSD: est, points: est,
+    });
+    selectedId = newId;
+    e.target.reset();
+    updateEstimate();
+    closeIntakeModal();
+    render();
+  });
+
+  render();
+})();
+
+/* ================= TAB 3: VGIS Calculator ================= */
+(function initVGIS() {
+  const el = document.getElementById('panel-vgis');
+  el.innerHTML = `
+    <div class="section-head">
+      <div class="eyebrow">Economic Valuation Engine</div>
+      <h2>VGIS Core Calculator &amp; Government Procurement Simulator</h2>
+      <p>The baseline conversion table underpinning every VGIS point in the system, and the live tender-scoring formula that rewards verified civic contribution.</p>
+    </div>
+    <div class="card table-scroll">
+      <h3 class="card-title" style="margin-bottom:14px;">Economic Valuation Baseline Grid</h3>
+      <table>
+        <thead><tr><th>Activity</th><th style="text-align:right;">USD Equivalent</th><th style="text-align:right;">VGIS Points</th></tr></thead>
+        <tbody>
+          ${VALUATION_BASELINE.map(r => `<tr><td>${r.activity}</td><td class="tabular" style="text-align:right; color:var(--success); font-weight:600;">${fmtUSD(r.usd)}</td><td class="tabular" style="text-align:right; color:var(--accent); font-weight:700;">${r.points.toFixed(1)} pts</td></tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <h3 class="card-title">${icon('gauge')} Government Tender Procurement Score Simulator</h3>
+      <p class="card-sub">Total Score = (0.70 × Tech/Fin Score) + (0.30 × [Bidder VGIS ÷ Max VGIS] × 100)</p>
+      <div class="grid grid-2">
+        <div class="stack">
+          <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--accent);">Bidder Under Evaluation</div>
+          <div>
+            <div class="field-row"><span>Technical / Financial Bid Score</span><span class="val tabular" id="techFinVal">78</span></div>
+            <input type="range" id="techFinSlider" min="0" max="100" value="78" />
+          </div>
+          <div>
+            <div class="field-row"><span>Bidder's VGIS Point Balance</span><span class="val tabular" id="bidderVGISVal">9,500</span></div>
+            <input type="range" id="bidderVGISSlider" min="0" max="25000" step="100" value="9500" />
+          </div>
+          <div style="font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--text-muted); padding-top:6px;">Highest Competitor</div>
+          <div>
+            <div class="field-row"><span>Competitor Technical / Financial Score</span><span class="val tabular" id="compTechFinVal">78</span></div>
+            <input type="range" id="compTechFinSlider" min="0" max="100" value="78" />
+          </div>
+          <div>
+            <div class="field-row"><span>Highest Competitor VGIS Balance</span><span class="val tabular" id="compVGISVal">6,200</span></div>
+            <input type="range" id="compVGISSlider" min="0" max="25000" step="100" value="6200" />
+          </div>
+        </div>
+        <div class="stack">
+          <div class="stat-box" style="border-color:rgba(245,158,11,0.3);"><div class="k">Bidder Total Score</div><div class="v tabular" style="color:var(--accent); font-size:26px;" id="bidderScore">0.00</div></div>
+          <div class="stat-box"><div class="k">Competitor Total Score</div><div class="v tabular" style="font-size:26px; color:#CBD5E1;" id="compScore">0.00</div></div>
+          <div class="stat-box" id="tieBox" style="display:flex; gap:10px; align-items:flex-start;">
+            <div id="tieIcon" style="flex-shrink:0; margin-top:2px;"></div>
+            <div id="tieText" style="font-size:13px; line-height:1.5;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const techFinSlider = document.getElementById('techFinSlider');
+  const bidderVGISSlider = document.getElementById('bidderVGISSlider');
+  const compTechFinSlider = document.getElementById('compTechFinSlider');
+  const compVGISSlider = document.getElementById('compVGISSlider');
+
+  [techFinSlider, bidderVGISSlider, compTechFinSlider, compVGISSlider].forEach(s => s.addEventListener('input', recalc));
+
+  function recalc() {
+    const techFin = Number(techFinSlider.value);
+    const bidderVGIS = Number(bidderVGISSlider.value);
+    const compTechFin = Number(compTechFinSlider.value);
+    const compVGIS = Number(compVGISSlider.value);
+
+    document.getElementById('techFinVal').textContent = techFin;
+    document.getElementById('bidderVGISVal').textContent = fmtNum(bidderVGIS);
+    document.getElementById('compTechFinVal').textContent = compTechFin;
+    document.getElementById('compVGISVal').textContent = fmtNum(compVGIS);
+
+    const maxVGIS = Math.max(bidderVGIS, compVGIS, 1);
+    const bidderScore = 0.7 * techFin + 0.3 * (bidderVGIS / maxVGIS) * 100;
+    const compScore = 0.7 * compTechFin + 0.3 * (compVGIS / maxVGIS) * 100;
+
+    document.getElementById('bidderScore').textContent = bidderScore.toFixed(2);
+    document.getElementById('compScore').textContent = compScore.toFixed(2);
+
+    const tieBox = document.getElementById('tieBox');
+    const tieIcon = document.getElementById('tieIcon');
+    const tieText = document.getElementById('tieText');
+    const isTie = techFin === compTechFin;
+
+    tieBox.style.borderColor = isTie ? 'rgba(245,158,11,0.5)' : 'var(--border)';
+    tieBox.style.background = isTie ? 'var(--accent-soft)' : 'rgba(255,255,255,0.02)';
+    tieIcon.style.color = isTie ? 'var(--accent)' : 'var(--text-faint)';
+    tieIcon.innerHTML = icon('trending');
+
+    if (isTie) {
+      let verdict = bidderVGIS === compVGIS ? 'Absolute tie — manual review required' : (bidderVGIS > compVGIS ? 'Bidder wins on higher VGIS balance' : 'Competitor wins on higher VGIS balance');
+      tieText.innerHTML = '<div style="font-weight:700; color:var(--accent);">Tie-Breaker Triggered</div><div style="color:#CBD5E1; margin-top:4px;">Technical/Financial scores are tied. Contract is automatically awarded on VGIS balance: <strong style="color:var(--text);">' + verdict + '</strong>.</div>';
+    } else {
+      const leaderText = bidderScore > compScore ? 'Bidder leads on combined score' : 'Competitor leads on combined score';
+      tieText.innerHTML = '<div style="font-weight:700; color:var(--text);">' + leaderText + '</div><div style="color:var(--text-muted); margin-top:4px;">No tie-breaker needed — award follows the higher Total Score.</div>';
+    }
+  }
+  recalc();
+})();
+
+/* ================= TAB 4: Projects ================= */
+(function initProjects() {
+  const el = document.getElementById('panel-projects');
+  el.innerHTML = `
+    <div class="section-head">
+      <div class="eyebrow">Phase-1 Implementation</div>
+      <h2>Priority Projects Tracker</h2>
+      <p>Live milestone progress across Laascaanood's two flagship Phase-1 infrastructure corridors.</p>
+    </div>
+
+    <div class="card">
+      <div class="proj-head">
+        <div class="proj-id">
+          <div class="proj-icon">${icon('plane')}</div>
+          <div><div class="proj-eyebrow">Sub-Project 1</div><div class="proj-title">Laascaanood Airport Building &amp; Runway Rehabilitation</div></div>
+        </div>
+        <span class="pill on">In Progress — 61%</span>
+      </div>
+      <div class="grid grid-2">
+        <div class="stack">
+          ${[
+            ['layers', 'Runway Leveling (2.4 km)', 72, 'var(--success)'],
+            ['fence', 'Security Fence (6 km)', 54, 'var(--success)'],
+            ['sun', 'Solar Night-Landing Lights', 38, 'var(--success)'],
+            ['building', 'Modular Passenger Terminal', 46, 'var(--success)'],
+          ].map(([ic, label, pct, color]) => `
+            <div>
+              <div class="progress-row"><span style="display:flex; align-items:center; gap:6px;"><span style="color:var(--accent);">${icon(ic)}</span>${label}</span><span style="color:var(--text); font-weight:600;">${pct}%</span></div>
+              <div class="progress"><span style="width:${pct}%; background:${color};"></span></div>
+            </div>
+          `).join('')}
+        </div>
+        <div>
+          <div style="font-weight:700; font-size:13.5px; margin-bottom:12px;">Division of Labor</div>
+          <div class="stack" style="gap:12px;">
+            ${[
+              ['Citizens', 28, 'var(--success)'],
+              ['Contractors', 40, 'var(--accent)'],
+              ['Students', 14, 'var(--info)'],
+              ['Diaspora (Sponsorship)', 18, 'var(--violet)'],
+            ].map(([label, pct, color]) => `
+              <div>
+                <div class="progress-row" style="font-size:12.5px;"><span>${label}</span><span style="color:var(--text); font-weight:600;">${pct}%</span></div>
+                <div class="progress"><span style="width:${pct}%; background:${color};"></span></div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="proj-head">
+        <div class="proj-id">
+          <div class="proj-icon">${icon('route')}</div>
+          <div><div class="proj-eyebrow">Sub-Project 2</div><div class="proj-title">Laascaanood–Kalabaydh Highway Corridor &amp; Urban Access Network</div></div>
+        </div>
+        <span class="pill on">In Progress — 47%</span>
+      </div>
+      <div class="grid grid-2" style="margin-bottom:22px;">
+        <div>
+          <div class="progress-row"><span>30 km DBST Surface Treatment</span><span style="color:var(--text); font-weight:600;">14.1 / 30 km</span></div>
+          <div class="progress"><span style="width:${(14.1/30*100).toFixed(1)}%;"></span></div>
+        </div>
+        <div>
+          <div class="progress-row"><span>Reinforced Box Culverts</span><span style="color:var(--text); font-weight:600;">9 / 16 installed</span></div>
+          <div class="progress"><span style="width:${(9/16*100).toFixed(1)}%; background:var(--accent);"></span></div>
+        </div>
+        <div>
+          <div class="progress-row"><span>Interlocking Cobblestone (Student Brigades)</span><span style="color:var(--text); font-weight:600;">3.2 / 5 km</span></div>
+          <div class="progress"><span style="width:${(3.2/5*100).toFixed(1)}%; background:var(--info);"></span></div>
+        </div>
+      </div>
+      <h3 class="card-title" style="margin-bottom:12px;">${icon('truck')} Active Fleet / Equipment Tracker (Hobbs Meter Logged)</h3>
+      <div class="table-scroll">
+        <table>
+          <thead><tr><th>Unit ID</th><th>Type</th><th>Assigned Project</th><th style="text-align:right;">Hobbs Hrs</th><th style="text-align:right;">Status</th></tr></thead>
+          <tbody>
+            ${FLEET.map(f => `<tr>
+              <td class="mono" style="font-size:11.5px; color:var(--text-faint);">${f.id}</td>
+              <td>${f.type}</td>
+              <td style="color:var(--text-muted);">${f.project}</td>
+              <td class="tabular" style="text-align:right;">${f.hobbsHrs.toFixed(1)}</td>
+              <td style="text-align:right;"><span class="pill ${f.status === 'Active' ? 'on' : f.status === 'Idle' ? 'idle' : 'maint'}">${f.status}</span></td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+})();
+
+/* ================= TAB 5: Integrity ================= */
+(function initIntegrity() {
+  const el = document.getElementById('panel-integrity');
+  el.innerHTML = `
+    <div class="section-head">
+      <div class="eyebrow">Anti-Fraud Governance</div>
+      <h2>Integrity Code, Audit &amp; Anti-Fraud Engine</h2>
+      <p>The offense classification matrix, due-process appeals workflow, and automated point clawback logic protecting the integrity of the VGIS ledger.</p>
+    </div>
+
+    <div class="grid grid-3">
+      ${OFFENSE_CLASSES.map(o => `
+        <div class="offense-card ${o.tone}">
+          <span class="offense-badge">${o.cls}</span>
+          <div class="offense-title">${o.title}</div>
+          <div class="offense-examples">${o.examples}</div>
+          <div class="offense-meta"><span>Penalty</span><span>${o.penalty}</span></div>
+          <div class="offense-meta"><span>Point Clawback</span><span>${o.clawback}</span></div>
+        </div>
+      `).join('')}
+    </div>
+
+    <div class="card">
+      <h3 class="card-title">${icon('clipboard')} Notice of Violation (NOV) &amp; Appeals Workflow</h3>
+      <div class="workflow-rail" id="workflowRail" style="margin-top:16px;"></div>
+      <div class="workflow-detail" id="workflowDetail"></div>
+    </div>
+
+    <div class="card">
+      <h3 class="card-title" style="color:var(--danger);">${icon('alert')} Live Fraud Alert Simulation Tool</h3>
+      <p class="card-sub">Points Deducted = Fraudulent Claimed Points × Penalty Multiplier</p>
+      <div class="grid grid-2">
+        <div class="stack">
+          <div>
+            <div class="field-row"><span>Fraudulently Claimed Points</span><span class="val tabular" id="claimedVal">1,200</span></div>
+            <input type="range" id="claimedSlider" min="0" max="20000" step="50" value="1200" />
+          </div>
+          <div>
+            <div style="font-size:13.5px; color:#CBD5E1; margin-bottom:8px;">Penalty Multiplier (Offense Class)</div>
+            <div class="chip-row" id="multiplierChips"></div>
+          </div>
+          <button class="btn-solid danger" id="triggerAlertBtn">${icon('radio')} Trigger Mock Audit Flag — Hobbs Meter Spike, Grader #BUS-004</button>
+        </div>
+        <div>
+          <div class="stat-box" style="border-color:rgba(248,113,113,0.35); margin-bottom:16px;">
+            <div class="k">Points to be Deducted (Live Preview)</div>
+            <div class="v tabular" id="deductedPreview" style="color:var(--danger); font-size:26px;">0</div>
+            <div style="font-size:11px; color:var(--text-faint); margin-top:4px;" id="deductedFormula"></div>
+          </div>
+          <div style="font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; color:var(--text-muted); margin-bottom:8px;">Alert Log</div>
+          <div class="stack" style="gap:8px; max-height:230px; overflow-y:auto;" id="alertLog">
+            <div class="alert-log-empty">No alerts triggered yet.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  const workflowRail = document.getElementById('workflowRail');
+  let activeStep = 1;
+  WORKFLOW_STEPS.forEach(s => {
+    const b = document.createElement('button');
+    b.className = 'workflow-step' + (s.step === activeStep ? ' active' : '');
+    b.dataset.step = s.step;
+    b.innerHTML = `<div class="step-top">${icon(s.icon)}<span class="step-num">STEP ${s.step}</span></div><div class="step-title">${s.title}</div>`;
+    b.addEventListener('click', () => {
+      activeStep = s.step;
+      workflowRail.querySelectorAll('.workflow-step').forEach(x => x.classList.toggle('active', Number(x.dataset.step) === activeStep));
+      document.getElementById('workflowDetail').textContent = WORKFLOW_STEPS.find(w => w.step === activeStep).desc;
+    });
+    workflowRail.appendChild(b);
+  });
+  document.getElementById('workflowDetail').textContent = WORKFLOW_STEPS[0].desc;
+
+  const claimedSlider = document.getElementById('claimedSlider');
+  const multiplierChips = document.getElementById('multiplierChips');
+  let multiplier = 3;
+  const multOptions = [
+    { label: '3x (Class B min)', value: 3 },
+    { label: '5x (Class B max)', value: 5 },
+    { label: '100% Wipeout (Class C)', value: 100 },
+  ];
+  multOptions.forEach((opt, i) => {
+    const b = document.createElement('button');
+    b.className = 'btn chip' + (i === 0 ? ' active alt-danger' : '');
+    b.textContent = opt.label;
+    b.addEventListener('click', () => {
+      multiplier = opt.value;
+      multiplierChips.querySelectorAll('button').forEach(x => x.classList.remove('active', 'alt-danger'));
+      b.classList.add('active', 'alt-danger');
+      updatePreview();
+    });
+    multiplierChips.appendChild(b);
+  });
+
+  function updatePreview() {
+    const claimed = Number(claimedSlider.value);
+    document.getElementById('claimedVal').textContent = fmtNum(claimed);
+    const deducted = Math.min(claimed * multiplier, claimed * 100);
+    document.getElementById('deductedPreview').textContent = fmtNum(deducted);
+    document.getElementById('deductedFormula').textContent = fmtNum(claimed) + ' pts × ' + (multiplier === 100 ? '100% wipeout' : multiplier + 'x');
+  }
+  claimedSlider.addEventListener('input', updatePreview);
+  updatePreview();
+
+  const alertLog = document.getElementById('alertLog');
+  let logEntries = [];
+  document.getElementById('triggerAlertBtn').addEventListener('click', () => {
+    const claimed = Number(claimedSlider.value);
+    const deducted = Math.min(claimed * multiplier, claimed * 100);
+    logEntries.unshift({ time: new Date().toLocaleTimeString(), claimed, multiplier, deducted });
+    logEntries = logEntries.slice(0, 6);
+    alertLog.innerHTML = logEntries.map(a => `
+      <div class="alert-log-entry">
+        ${icon('filewarn')}
+        <div>
+          <div><strong style="color:var(--text);">Grader #BUS-004</strong> — ${a.time}</div>
+          <div style="color:var(--text-muted); margin-top:2px;">Claimed ${fmtNum(a.claimed)} pts × ${a.multiplier === 100 ? '100%' : a.multiplier + 'x'} = <span style="color:var(--danger); font-weight:700;">${fmtNum(a.deducted)} pts clawed back</span></div>
+        </div>
+      </div>
+    `).join('');
+  });
+})();
+</script>
+</body>
+</html>
