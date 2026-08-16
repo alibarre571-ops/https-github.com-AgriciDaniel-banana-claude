@@ -11,20 +11,36 @@ Somalia).
 
 - `ProjectWadaniDashboard.jsx` — the complete dashboard component (default export
   `ProjectWadaniDashboard`) for use inside a React + Tailwind + lucide-react
-  project. All sub-components, seed data, and formulas live in this one file.
+  project. All sub-components and formulas live in this one file.
 - `dashboard-standalone.html` — the same dashboard as a **plain HTML file with
   no dependencies**. Download it and double-click to open in any browser —
-  no Node, no npm install, no build step, works fully offline. This is the
-  fastest way to run the dashboard locally; it reimplements the same data,
-  formulas, and interactions in vanilla JS/CSS (no React or lucide-react, so
-  it stays a single file you can just open).
+  no Node, no npm install, no build step. It reimplements the same
+  interactions in vanilla JS/CSS (no React or lucide-react, so it stays a
+  single file you can just open).
+- **[`../../backend/`](../../backend/)** — the Express + PostgreSQL API both
+  of the above talk to for volunteers, attendance, and admin login. Both
+  frontends are static files that call this backend over HTTP; neither one
+  stores volunteer/attendance data itself anymore.
 
-## Run it locally right now
+## Run it
 
-Download `dashboard-standalone.html` and open it directly in a browser
-(double-click it, or `open dashboard-standalone.html` / `xdg-open
-dashboard-standalone.html`). That's it — every tab, slider, calculator, the
-registration modal, and the fraud-alert simulator work with zero setup.
+The dashboard needs the backend deployed (or running locally) to load
+volunteers, register people, or mark attendance — the tables in the Town
+Hall / Projects / VGIS Calculator / Integrity tabs are static demo content
+and work with no backend at all, but Registry and Attendance are now
+backed by a real shared database.
+
+1. Deploy the backend — see **[`backend/README.md`](../../backend/README.md)**
+   (free, ~10 minutes on Render).
+2. Open `dashboard-standalone.html` (or `ProjectWadaniDashboard.jsx`) and set
+   the `API_BASE_URL` constant near the top of the script to your deployed
+   backend's URL.
+3. Open the HTML file in a browser (double-click it, or `open
+   dashboard-standalone.html` / `xdg-open dashboard-standalone.html`), or
+   deploy it as a static site (e.g. GitHub Pages).
+
+Running the standalone HTML file straight from disk (`file://`) works fine
+as long as the backend's `CORS_ORIGIN` allows it — see the backend README.
 
 ## Sections
 
@@ -52,30 +68,31 @@ registration modal, and the fraud-alert simulator work with zero setup.
 
 ## Admin login
 
-Both the React component and the standalone HTML file include a client-side
-admin login (top-right of the header). Verifying a pending registration and
-marking attendance both require being logged in.
+Both the React component and the standalone HTML file include an admin
+login (top-right of the header). Verifying a pending registration and
+marking attendance both require being logged in. Credentials are checked
+by the backend against a bcrypt-hashed password in Postgres — the frontend
+no longer contains any password.
 
 | Username   | Password    | Role         |
 |------------|-------------|--------------|
 | `alibarre` | `571barre`  | Super Admin  |
 
-**This is a browser-side login check only — not real security.** The
-username and password above are stored in plain text in the page's JS
-source (both this repo and the compiled bundle anyone downloads), so
-anyone who views source or reads this README can see them. Treat it as UI
-access-gating (who can click "Verify" / mark attendance), never as
-protection for sensitive data. If this dashboard is ever exposed publicly,
-change these credentials and wire the login to a real auth backend before
-using
-this for anything beyond a demo.
+Change this by editing `ADMINS` in `backend/src/seed.js` and redeploying
+the backend (see `backend/README.md`) — the seed script is idempotent, so
+re-running it updates the existing account rather than duplicating it.
 
 ## Data persistence
 
-Both versions persist volunteers, attendance records, and the admin session
-to the browser's `localStorage`, so registrations, verifications, and
-attendance marks survive a page reload. Clearing site data / browser storage
-resets the dashboard back to the seed dataset.
+Volunteers and attendance records live in the backend's PostgreSQL
+database — shared across every visitor, not per-browser. The only thing
+the frontend still keeps in `localStorage` is the signed-in admin's login
+token, so a page reload doesn't force a re-login; that token is validated
+against the backend (`GET /api/auth/me`) on every load, not trusted blindly.
+
+If the backend is unreachable (not yet deployed, wrong `API_BASE_URL`,
+CORS misconfigured), the dashboard shows a red banner explaining what's
+wrong instead of failing silently.
 
 ## Using it in your app
 
@@ -96,7 +113,7 @@ export default function App() {
 }
 ```
 
-Volunteer, attendance, and admin-session state is seeded via `useState` and
-persisted to `localStorage` for demonstration — wire it to a real backend by
-replacing the `SEED_VOLUNTEERS`/`FLEET`/`ADMINS` constants and the
-`loadJSON`/`saveJSON` calls with your API and auth calls.
+Set `API_BASE_URL` near the top of `ProjectWadaniDashboard.jsx` to your
+deployed backend's URL (see `backend/README.md`) before using this in
+production — it defaults to a placeholder Render URL that won't exist
+until you deploy your own.

@@ -99,179 +99,38 @@ function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }
 
-/* ---------------- Local persistence (browser-only demo storage) ---------------- */
-const STORAGE_KEYS = {
-  volunteers: "wadani_vgis_volunteers_v1",
-  attendance: "wadani_vgis_attendance_v1",
-  session: "wadani_vgis_admin_session_v1",
-};
+/* ---------------- Backend API ----------------
+ * Volunteers, attendance, and admin auth are served by the Express +
+ * PostgreSQL backend in /backend. Set this to your deployed backend's URL
+ * (see backend/README.md) — Render gives you one like
+ * https://wadani-vgis-backend.onrender.com after deploying the render.yaml
+ * Blueprint.
+ */
+const API_BASE_URL = "https://wadani-vgis-backend.onrender.com";
+const TOKEN_KEY = "wadani_vgis_token";
 
-function loadJSON(key, fallback) {
-  if (typeof window === "undefined") return fallback;
+async function apiFetch(path, options = {}) {
+  const token = typeof window !== "undefined" ? window.localStorage.getItem(TOKEN_KEY) : null;
+  const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  let res;
   try {
-    const raw = window.localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
+    res = await fetch(`${API_BASE_URL}${path}`, { ...options, headers });
   } catch (e) {
-    return fallback;
+    throw new Error(`Could not reach the backend at ${API_BASE_URL}. Is it deployed and is API_BASE_URL set correctly?`);
   }
-}
-
-function saveJSON(key, value) {
-  if (typeof window === "undefined") return;
+  let data = null;
   try {
-    window.localStorage.setItem(key, JSON.stringify(value));
+    data = await res.json();
   } catch (e) {
-    /* storage unavailable */
+    /* empty body */
   }
+  if (!res.ok) {
+    throw new Error((data && data.error) || `Request failed (${res.status})`);
+  }
+  return data;
 }
-
-/* ---------------- Admin accounts (client-side demo auth — not real security) ---------------- */
-const ADMINS = [
-  { username: "alibarre", password: "571barre", name: "Ali Suleiman Ali", role: "Super Admin" },
-];
-
-const SEED_VOLUNTEERS = [
-  {
-    id: "VGIS-LS-2026-0102",
-    name: "Xasan Cabdi Warsame",
-    category: "citizens",
-    entityType: "Individual Citizen",
-    modality: "Labor",
-    logHistory: "42 hrs unskilled labor, box-culvert excavation, Kalabaydh corridor",
-    valueUSD: 105,
-    points: 105,
-    phone: "+252 63 401 1102",
-    district: "Kalabaydh Corridor",
-    status: "Verified",
-    dateRegistered: "2026-01-14",
-  },
-  {
-    id: "VGIS-LS-2026-0087",
-    name: "Golis Construction & Trading Co.",
-    category: "business",
-    entityType: "Registered Business",
-    modality: "Equipment",
-    logHistory: "1 Grader logged 60 Hobbs hrs, Kalabaydh corridor DBST works",
-    valueUSD: 3900,
-    points: 3900,
-    phone: "+252 63 700 0087",
-    district: "Kalabaydh Corridor",
-    status: "Verified",
-    dateRegistered: "2026-01-09",
-  },
-  {
-    id: "VGIS-LS-2026-0451",
-    name: "Sahra M. Egal (Toronto Chapter)",
-    category: "diaspora",
-    entityType: "Diaspora Donor",
-    modality: "Cash",
-    logHistory: "Monthly VGIS pledge, 14 consecutive months, USSD + Swift",
-    valueUSD: 1400,
-    points: 1400,
-    phone: "+1 416 555 0142",
-    district: "Other",
-    status: "Verified",
-    dateRegistered: "2025-11-02",
-  },
-  {
-    id: "VGIS-LS-2026-0512",
-    name: "Laascaanood Polytechnic — Civil Eng. Brigade",
-    category: "education",
-    entityType: "Educational Institution",
-    modality: "Labor",
-    logHistory: "310 student-hours, interlocking cobblestone paving brigades",
-    valueUSD: 775,
-    points: 775,
-    phone: "+252 63 402 0512",
-    district: "Laascaanood Town Centre",
-    status: "Verified",
-    dateRegistered: "2026-02-01",
-  },
-  {
-    id: "VGIS-LS-2026-0033",
-    name: "Eng. Faysal Nur Jibril",
-    category: "government",
-    entityType: "Government Civil Engineer",
-    modality: "Expert Advisory",
-    logHistory: "220 hrs airport runway leveling design & site supervision",
-    valueUSD: 4400,
-    points: 4400,
-    phone: "+252 63 400 0033",
-    district: "Airport Perimeter",
-    status: "Verified",
-    dateRegistered: "2025-12-11",
-  },
-  {
-    id: "VGIS-LS-2026-0210",
-    name: "Nomad Fuel & Logistics",
-    category: "business",
-    entityType: "Registered Business",
-    modality: "Fuel",
-    logHistory: "6,200L diesel donated, runway rehabilitation fleet",
-    valueUSD: 8680,
-    points: 8680,
-    phone: "+252 63 700 0210",
-    district: "Airport Perimeter",
-    status: "Verified",
-    dateRegistered: "2026-01-22",
-  },
-  {
-    id: "VGIS-LS-2026-0668",
-    name: "Amina H. Farah",
-    category: "citizens",
-    entityType: "Individual Citizen",
-    modality: "Labor",
-    logHistory: "18 hrs unskilled labor, security fence trenching",
-    valueUSD: 45,
-    points: 45,
-    phone: "+252 63 401 0668",
-    district: "Airport Perimeter",
-    status: "Pending Verification",
-    dateRegistered: "2026-03-02",
-  },
-  {
-    id: "VGIS-LS-2026-0729",
-    name: "Waqooyi Galbeed Diaspora Assoc. (Oslo)",
-    category: "diaspora",
-    entityType: "Diaspora Group",
-    modality: "Cash",
-    logHistory: "Bulk 1:1 matched sponsorship, solar night-landing lights unit",
-    valueUSD: 22000,
-    points: 22000,
-    phone: "+47 900 55 214",
-    district: "Other",
-    status: "Verified",
-    dateRegistered: "2025-10-18",
-  },
-  {
-    id: "VGIS-LS-2026-0355",
-    name: "Ministry of Public Works — Field Unit 3",
-    category: "government",
-    entityType: "Government Expert Team",
-    modality: "Expert Advisory",
-    logHistory: "Quality assurance inspections, 12 site audits",
-    valueUSD: 2640,
-    points: 2640,
-    phone: "+252 63 400 0355",
-    district: "Laascaanood Town Centre",
-    status: "Verified",
-    dateRegistered: "2025-12-29",
-  },
-  {
-    id: "VGIS-LS-2026-0894",
-    name: "SSC Youth Volunteer Corps — Batch 4",
-    category: "education",
-    entityType: "Student Brigade",
-    modality: "Labor",
-    logHistory: "540 student-hours, cobblestone & terminal grounds works",
-    valueUSD: 1350,
-    points: 1350,
-    phone: "+252 63 402 0894",
-    district: "Yagoori",
-    status: "Pending Verification",
-    dateRegistered: "2026-03-10",
-  },
-];
 
 const FLEET = [
   { id: "BUS-004", type: "Grader", project: "Kalabaydh Corridor", hobbsHrs: 612.4, status: "Active" },
@@ -367,21 +226,25 @@ function ProgressBar({ pct, colorClass = "bg-[#10B981]" }) {
 function LoginModal({ open, onClose, onLogin }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState(false);
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   if (!open) return null;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const ok = onLogin(username, password);
-    if (!ok) {
-      setError(true);
-      return;
+    setSubmitting(true);
+    setError("");
+    try {
+      await onLogin(username, password);
+      setUsername("");
+      setPassword("");
+      onClose();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
     }
-    setUsername("");
-    setPassword("");
-    setError(false);
-    onClose();
   };
 
   return (
@@ -397,7 +260,7 @@ function LoginModal({ open, onClose, onLogin }) {
 
         {error && (
           <div className="mb-4 rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-400">
-            Invalid username or password.
+            {error}
           </div>
         )}
 
@@ -424,14 +287,15 @@ function LoginModal({ open, onClose, onLogin }) {
             />
           </div>
           <div className="text-[11px] text-gray-500 leading-relaxed">
-            Restricted to authorized VGIS administrators. This is a client-side login check — credentials live in
-            this app's source, not a server, so treat it as access gating rather than real security.
+            Restricted to authorized VGIS administrators. Checked against the backend's database — this app's
+            source no longer contains any passwords.
           </div>
           <button
             type="submit"
-            className="w-full rounded-lg bg-[#F59E0B] text-[#0F172A] font-semibold py-2.5 hover:bg-[#F59E0B]/90 transition"
+            disabled={submitting}
+            className="w-full rounded-lg bg-[#F59E0B] text-[#0F172A] font-semibold py-2.5 hover:bg-[#F59E0B]/90 transition disabled:opacity-60"
           >
-            Sign In
+            {submitting ? "Signing In…" : "Sign In"}
           </button>
         </form>
       </div>
@@ -658,29 +522,35 @@ function IntakeModal({ open, onClose, onSubmit }) {
     unitValue: "",
   });
 
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
   if (!open) return null;
 
   const estimatedValue = (Number(form.quantity) || 0) * (Number(form.unitValue) || 0);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name.trim()) return;
-    onSubmit({
-      id: `VGIS-LS-2026-${Math.floor(1000 + Math.random() * 8999)}`,
-      name: form.name,
-      category: form.category,
-      entityType: form.entityType || CATEGORIES.find((c) => c.id === form.category)?.label,
-      modality: form.modality,
-      logHistory: `Self-registered: ${form.quantity || 0} ${form.modality === "Labor" ? "hrs" : "units"} pending field verification`,
-      valueUSD: estimatedValue,
-      points: estimatedValue,
-      phone: form.phone.trim(),
-      district: form.district,
-      status: "Pending Verification",
-      dateRegistered: todayStr(),
-    });
-    setForm({ name: "", phone: "", district: DISTRICTS[0], category: "citizens", entityType: "", modality: "Labor", quantity: "", unitValue: "" });
-    onClose();
+    setSubmitting(true);
+    setError("");
+    try {
+      await onSubmit({
+        name: form.name.trim(),
+        category: form.category,
+        modality: form.modality,
+        quantity: Number(form.quantity) || 0,
+        unitValue: Number(form.unitValue) || 0,
+        phone: form.phone.trim(),
+        district: form.district,
+      });
+      setForm({ name: "", phone: "", district: DISTRICTS[0], category: "citizens", entityType: "", modality: "Labor", quantity: "", unitValue: "" });
+      onClose();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -791,11 +661,16 @@ function IntakeModal({ open, onClose, onSubmit }) {
             <span className="text-[#F59E0B] font-semibold">{fmtUSD(estimatedValue)} · {fmtNum(estimatedValue, 1)} pts</span>
           </div>
 
+          {error && (
+            <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-xs text-red-400">{error}</div>
+          )}
+
           <button
             type="submit"
-            className="w-full rounded-lg bg-[#F59E0B] text-[#0F172A] font-semibold py-2.5 hover:bg-[#F59E0B]/90 transition"
+            disabled={submitting}
+            className="w-full rounded-lg bg-[#F59E0B] text-[#0F172A] font-semibold py-2.5 hover:bg-[#F59E0B]/90 transition disabled:opacity-60"
           >
-            Submit Registration for Field Verification
+            {submitting ? "Submitting…" : "Submit Registration for Field Verification"}
           </button>
         </form>
       </div>
@@ -991,7 +866,13 @@ function RegistryTab({ volunteers, isAdmin, onRegister, onVerify }) {
               {selected.status !== "Verified" &&
                 (isAdmin ? (
                   <button
-                    onClick={() => onVerify(selected.id)}
+                    onClick={async () => {
+                      try {
+                        await onVerify(selected.id);
+                      } catch (err) {
+                        alert(`Could not verify this registration: ${err.message}`);
+                      }
+                    }}
                     className="mt-4 w-full flex items-center justify-center gap-2 rounded-lg bg-[#10B981] text-[#062019] font-semibold py-2.5 hover:bg-[#10B981]/90 transition"
                   >
                     <CheckCircle2 className="h-4 w-4" /> Verify Registration
@@ -1011,8 +892,8 @@ function RegistryTab({ volunteers, isAdmin, onRegister, onVerify }) {
       <IntakeModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        onSubmit={(newVolunteer) => {
-          onRegister(newVolunteer);
+        onSubmit={async (formPayload) => {
+          const newVolunteer = await onRegister(formPayload);
           setSelectedId(newVolunteer.id);
         }}
       />
@@ -1109,21 +990,21 @@ function AttendanceTab({ volunteers, attendance, isAdmin, onMark }) {
                     <div className="flex justify-end gap-1.5 flex-wrap">
                       <button
                         disabled={!isAdmin}
-                        onClick={() => onMark(v.id, v.name, "Present")}
+                        onClick={() => onMark(v.id, v.name, "Present").catch((err) => alert(`Could not mark attendance: ${err.message}`))}
                         className="flex items-center gap-1 rounded-lg border border-white/15 px-2.5 py-1.5 text-[11px] font-semibold text-gray-400 hover:border-[#10B981] hover:text-[#10B981] disabled:opacity-40 disabled:hover:border-white/15 disabled:hover:text-gray-400 disabled:cursor-not-allowed"
                       >
                         <CheckCircle2 className="h-3 w-3" /> Present
                       </button>
                       <button
                         disabled={!isAdmin}
-                        onClick={() => onMark(v.id, v.name, "Late")}
+                        onClick={() => onMark(v.id, v.name, "Late").catch((err) => alert(`Could not mark attendance: ${err.message}`))}
                         className="flex items-center gap-1 rounded-lg border border-white/15 px-2.5 py-1.5 text-[11px] font-semibold text-gray-400 hover:border-[#F59E0B] hover:text-[#F59E0B] disabled:opacity-40 disabled:hover:border-white/15 disabled:hover:text-gray-400 disabled:cursor-not-allowed"
                       >
                         <Clock className="h-3 w-3" /> Late
                       </button>
                       <button
                         disabled={!isAdmin}
-                        onClick={() => onMark(v.id, v.name, "Absent")}
+                        onClick={() => onMark(v.id, v.name, "Absent").catch((err) => alert(`Could not mark attendance: ${err.message}`))}
                         className="flex items-center gap-1 rounded-lg border border-white/15 px-2.5 py-1.5 text-[11px] font-semibold text-gray-400 hover:border-red-400 hover:text-red-400 disabled:opacity-40 disabled:hover:border-white/15 disabled:hover:text-gray-400 disabled:cursor-not-allowed"
                       >
                         <XCircle className="h-3 w-3" /> Absent
@@ -1658,49 +1539,78 @@ function IntegrityTab() {
 
 export default function ProjectWadaniDashboard() {
   const [activeTab, setActiveTab] = useState("townhall");
-  const [volunteers, setVolunteers] = useState(() => loadJSON(STORAGE_KEYS.volunteers, SEED_VOLUNTEERS));
-  const [attendance, setAttendance] = useState(() => loadJSON(STORAGE_KEYS.attendance, []));
-  const [adminSession, setAdminSession] = useState(() => loadJSON(STORAGE_KEYS.session, null));
+  const [volunteers, setVolunteers] = useState([]);
+  const [attendance, setAttendance] = useState([]);
+  const [adminSession, setAdminSession] = useState(null);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [apiError, setApiError] = useState("");
 
-  useEffect(() => saveJSON(STORAGE_KEYS.volunteers, volunteers), [volunteers]);
-  useEffect(() => saveJSON(STORAGE_KEYS.attendance, attendance), [attendance]);
-  useEffect(() => saveJSON(STORAGE_KEYS.session, adminSession), [adminSession]);
+  useEffect(() => {
+    async function bootstrap() {
+      const restoreSession = async () => {
+        if (!window.localStorage.getItem(TOKEN_KEY)) return;
+        try {
+          const profile = await apiFetch("/api/auth/me");
+          setAdminSession(profile);
+        } catch (e) {
+          window.localStorage.removeItem(TOKEN_KEY);
+        }
+      };
+      try {
+        const [, vols, atts] = await Promise.all([restoreSession(), apiFetch("/api/volunteers"), apiFetch("/api/attendance")]);
+        setVolunteers(vols);
+        setAttendance(atts);
+        setApiError("");
+      } catch (err) {
+        setApiError(err.message);
+      }
+    }
+    bootstrap();
+  }, []);
 
   const isAdmin = !!adminSession;
 
-  const handleLogin = (username, password) => {
-    const match = ADMINS.find((a) => a.username === username && a.password === password);
-    if (!match) return false;
-    setAdminSession({ username: match.username, name: match.name, role: match.role, loginTime: Date.now() });
-    return true;
+  const handleLogin = async (username, password) => {
+    const profile = await apiFetch("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ username, password }),
+    });
+    window.localStorage.setItem(TOKEN_KEY, profile.token);
+    setAdminSession({ username: profile.username, name: profile.name, role: profile.role });
   };
 
-  const handleVerify = (id) => {
-    setVolunteers((prev) => prev.map((v) => (v.id === id ? { ...v, status: "Verified" } : v)));
+  const handleLogout = () => {
+    window.localStorage.removeItem(TOKEN_KEY);
+    setAdminSession(null);
   };
 
-  const handleMarkAttendance = (volunteerId, volunteerName, status) => {
-    if (!adminSession) return;
-    const today = todayStr();
-    const time = new Date().toLocaleTimeString();
+  const handleRegister = async (formPayload) => {
+    const newVolunteer = await apiFetch("/api/volunteers", {
+      method: "POST",
+      body: JSON.stringify(formPayload),
+    });
+    setVolunteers((prev) => [newVolunteer, ...prev]);
+    return newVolunteer;
+  };
+
+  const handleVerify = async (id) => {
+    const updated = await apiFetch(`/api/volunteers/${encodeURIComponent(id)}/verify`, { method: "PATCH" });
+    setVolunteers((prev) => prev.map((v) => (v.id === id ? updated : v)));
+  };
+
+  const handleMarkAttendance = async (volunteerId, volunteerName, status) => {
+    const record = await apiFetch("/api/attendance", {
+      method: "POST",
+      body: JSON.stringify({ volunteerId, status }),
+    });
     setAttendance((prev) => {
-      const idx = prev.findIndex((a) => a.volunteerId === volunteerId && a.date === today);
-      const entry = {
-        id: idx >= 0 ? prev[idx].id : `${Date.now()}-${volunteerId}`,
-        volunteerId,
-        volunteerName,
-        date: today,
-        status,
-        time,
-        markedBy: adminSession.name,
-      };
+      const idx = prev.findIndex((a) => a.volunteerId === volunteerId && a.date === record.date);
       if (idx >= 0) {
         const next = [...prev];
-        next[idx] = entry;
+        next[idx] = record;
         return next;
       }
-      return [entry, ...prev];
+      return [record, ...prev];
     });
   };
 
@@ -1731,7 +1641,7 @@ export default function ProjectWadaniDashboard() {
               <AdminControl
                 adminSession={adminSession}
                 onLoginClick={() => setLoginModalOpen(true)}
-                onLogout={() => setAdminSession(null)}
+                onLogout={handleLogout}
               />
             </div>
           </div>
@@ -1754,13 +1664,19 @@ export default function ProjectWadaniDashboard() {
         </div>
       </header>
 
+      {apiError && (
+        <div className="bg-red-500/10 border-b border-red-500/35 text-red-400 text-xs text-center px-5 py-2.5">
+          ⚠ {apiError}
+        </div>
+      )}
+
       <main className="max-w-7xl mx-auto px-4 md:px-6 py-8">
         {activeTab === "townhall" && <TownHallTab />}
         {activeTab === "registry" && (
           <RegistryTab
             volunteers={volunteers}
             isAdmin={isAdmin}
-            onRegister={(v) => setVolunteers((prev) => [v, ...prev])}
+            onRegister={handleRegister}
             onVerify={handleVerify}
           />
         )}

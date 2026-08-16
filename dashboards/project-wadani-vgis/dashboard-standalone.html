@@ -513,6 +513,16 @@
     border-radius: 10px; padding: 10px 12px; font-size: 12.5px;
   }
   .attendance-history-entry svg { width: 14px; height: 14px; flex-shrink: 0; margin-top: 2px; }
+
+  .api-banner {
+    display: none;
+    background: var(--danger-soft);
+    border-bottom: 1px solid rgba(248,113,113,0.35);
+    color: var(--danger);
+    font-size: 12.5px;
+    text-align: center;
+    padding: 10px 20px;
+  }
 </style>
 </head>
 <body>
@@ -537,6 +547,8 @@
   </div>
   <nav class="tab-rail" id="tabRail"></nav>
 </header>
+
+<div id="apiBanner" class="api-banner"></div>
 
 <main>
   <section class="panel" id="panel-townhall"></section>
@@ -680,27 +692,35 @@ const fmtUSD = n => '$' + Math.round(n).toLocaleString('en-US');
 const fmtNum = (n, d = 0) => Number(n).toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
-/* ---------------- Local persistence ---------------- */
-const STORAGE_KEYS = {
-  volunteers: 'wadani_vgis_volunteers_v1',
-  attendance: 'wadani_vgis_attendance_v1',
-  session: 'wadani_vgis_admin_session_v1',
-};
-function loadJSON(key, fallback) {
+/* ---------------- Backend API ----------------
+ * Set this to your deployed backend's URL (see backend/README.md).
+ * Render gives you a URL like https://wadani-vgis-backend.onrender.com
+ * after you deploy the render.yaml Blueprint — copy it here.
+ */
+const API_BASE_URL = 'https://wadani-vgis-backend.onrender.com';
+
+const TOKEN_KEY = 'wadani_vgis_token';
+
+async function apiFetch(path, options = {}) {
+  const token = localStorage.getItem(TOKEN_KEY);
+  const headers = Object.assign({ 'Content-Type': 'application/json' }, options.headers || {});
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  let res;
   try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
-  } catch (e) { return fallback; }
-}
-function saveJSON(key, value) {
-  try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* storage unavailable */ }
+    res = await fetch(API_BASE_URL + path, Object.assign({}, options, { headers }));
+  } catch (e) {
+    throw new Error('Could not reach the backend at ' + API_BASE_URL + '. Is it deployed and is API_BASE_URL set correctly?');
+  }
+  let data = null;
+  try { data = await res.json(); } catch (e) { /* empty body */ }
+  if (!res.ok) {
+    throw new Error((data && data.error) || ('Request failed (' + res.status + ')'));
+  }
+  return data;
 }
 
-/* ---------------- Admin accounts (client-side demo auth) ---------------- */
-const ADMINS = [
-  { username: 'alibarre', password: '571barre', name: 'Ali Suleiman Ali', role: 'Super Admin' },
-];
-let adminSession = loadJSON(STORAGE_KEYS.session, null);
+/* ---------------- Admin session ---------------- */
+let adminSession = null; // { username, name, role } — set once a cached token is validated, or after login
 function isAdmin() { return !!adminSession; }
 
 const refreshCallbacks = {};
@@ -719,7 +739,7 @@ function renderAdminControl() {
     `;
     document.getElementById('logoutBtn').addEventListener('click', () => {
       adminSession = null;
-      saveJSON(STORAGE_KEYS.session, null);
+      localStorage.removeItem(TOKEN_KEY);
       renderAdminControl();
       refreshAll();
     });
@@ -737,22 +757,49 @@ function openLoginModal() {
 function closeLoginModal() { document.getElementById('loginModal').classList.remove('open'); }
 document.getElementById('loginCloseBtn').addEventListener('click', closeLoginModal);
 document.getElementById('loginModal').addEventListener('click', e => { if (e.target.id === 'loginModal') closeLoginModal(); });
-document.getElementById('loginForm').addEventListener('submit', e => {
+document.getElementById('loginForm').addEventListener('submit', async e => {
   e.preventDefault();
   const u = document.getElementById('loginUsername').value.trim();
   const p = document.getElementById('loginPassword').value;
-  const match = ADMINS.find(a => a.username === u && a.password === p);
-  if (!match) {
-    document.getElementById('loginError').classList.add('show');
-    return;
+  const errBox = document.getElementById('loginError');
+  const submitBtn = e.target.querySelector('button[type=submit]');
+  errBox.classList.remove('show');
+  submitBtn.disabled = true;
+  try {
+    const profile = await apiFetch('/api/auth/login', { method: 'POST', body: JSON.stringify({ username: u, password: p }) });
+    localStorage.setItem(TOKEN_KEY, profile.token);
+    adminSession = { username: profile.username, name: profile.name, role: profile.role };
+    closeLoginModal();
+    renderAdminControl();
+    refreshAll();
+  } catch (err) {
+    errBox.textContent = err.message;
+    errBox.classList.add('show');
+  } finally {
+    submitBtn.disabled = false;
   }
-  adminSession = { username: match.username, name: match.name, role: match.role, loginTime: Date.now() };
-  saveJSON(STORAGE_KEYS.session, adminSession);
-  closeLoginModal();
-  renderAdminControl();
-  refreshAll();
 });
+
+async function restoreSession() {
+  if (!localStorage.getItem(TOKEN_KEY)) return;
+  try {
+    adminSession = await apiFetch('/api/auth/me');
+  } catch (e) {
+    localStorage.removeItem(TOKEN_KEY);
+  }
+  renderAdminControl();
+}
 renderAdminControl();
+
+/* ---------------- Backend connectivity banner ---------------- */
+function showApiBanner(message) {
+  const el = document.getElementById('apiBanner');
+  el.textContent = message;
+  el.style.display = 'block';
+}
+function hideApiBanner() {
+  document.getElementById('apiBanner').style.display = 'none';
+}
 
 /* ---------------- Data ---------------- */
 const ROAD_COST_PER_KM = 45000;
@@ -776,24 +823,20 @@ const VALUATION_BASELINE = [
   { activity: '$1 USD Cash / Micro-donation', usd: 1.0, points: 1.0 },
 ];
 
-const SEED_VOLUNTEERS = [
-  { id: 'VGIS-LS-2026-0102', name: 'Xasan Cabdi Warsame', category: 'citizens', entityType: 'Individual Citizen', modality: 'Labor', logHistory: '42 hrs unskilled labor, box-culvert excavation, Kalabaydh corridor', valueUSD: 105, points: 105, phone: '+252 63 401 1102', district: 'Kalabaydh Corridor', status: 'Verified', dateRegistered: '2026-01-14' },
-  { id: 'VGIS-LS-2026-0087', name: 'Golis Construction & Trading Co.', category: 'business', entityType: 'Registered Business', modality: 'Equipment', logHistory: '1 Grader logged 60 Hobbs hrs, Kalabaydh corridor DBST works', valueUSD: 3900, points: 3900, phone: '+252 63 700 0087', district: 'Kalabaydh Corridor', status: 'Verified', dateRegistered: '2026-01-09' },
-  { id: 'VGIS-LS-2026-0451', name: 'Sahra M. Egal (Toronto Chapter)', category: 'diaspora', entityType: 'Diaspora Donor', modality: 'Cash', logHistory: 'Monthly VGIS pledge, 14 consecutive months, USSD + Swift', valueUSD: 1400, points: 1400, phone: '+1 416 555 0142', district: 'Other', status: 'Verified', dateRegistered: '2025-11-02' },
-  { id: 'VGIS-LS-2026-0512', name: 'Laascaanood Polytechnic — Civil Eng. Brigade', category: 'education', entityType: 'Educational Institution', modality: 'Labor', logHistory: '310 student-hours, interlocking cobblestone paving brigades', valueUSD: 775, points: 775, phone: '+252 63 402 0512', district: 'Laascaanood Town Centre', status: 'Verified', dateRegistered: '2026-02-01' },
-  { id: 'VGIS-LS-2026-0033', name: 'Eng. Faysal Nur Jibril', category: 'government', entityType: 'Government Civil Engineer', modality: 'Expert Advisory', logHistory: '220 hrs airport runway leveling design & site supervision', valueUSD: 4400, points: 4400, phone: '+252 63 400 0033', district: 'Airport Perimeter', status: 'Verified', dateRegistered: '2025-12-11' },
-  { id: 'VGIS-LS-2026-0210', name: 'Nomad Fuel & Logistics', category: 'business', entityType: 'Registered Business', modality: 'Fuel', logHistory: '6,200L diesel donated, runway rehabilitation fleet', valueUSD: 8680, points: 8680, phone: '+252 63 700 0210', district: 'Airport Perimeter', status: 'Verified', dateRegistered: '2026-01-22' },
-  { id: 'VGIS-LS-2026-0668', name: 'Amina H. Farah', category: 'citizens', entityType: 'Individual Citizen', modality: 'Labor', logHistory: '18 hrs unskilled labor, security fence trenching', valueUSD: 45, points: 45, phone: '+252 63 401 0668', district: 'Airport Perimeter', status: 'Pending Verification', dateRegistered: '2026-03-02' },
-  { id: 'VGIS-LS-2026-0729', name: 'Waqooyi Galbeed Diaspora Assoc. (Oslo)', category: 'diaspora', entityType: 'Diaspora Group', modality: 'Cash', logHistory: 'Bulk 1:1 matched sponsorship, solar night-landing lights unit', valueUSD: 22000, points: 22000, phone: '+47 900 55 214', district: 'Other', status: 'Verified', dateRegistered: '2025-10-18' },
-  { id: 'VGIS-LS-2026-0355', name: 'Ministry of Public Works — Field Unit 3', category: 'government', entityType: 'Government Expert Team', modality: 'Expert Advisory', logHistory: 'Quality assurance inspections, 12 site audits', valueUSD: 2640, points: 2640, phone: '+252 63 400 0355', district: 'Laascaanood Town Centre', status: 'Verified', dateRegistered: '2025-12-29' },
-  { id: 'VGIS-LS-2026-0894', name: 'SSC Youth Volunteer Corps — Batch 4', category: 'education', entityType: 'Student Brigade', modality: 'Labor', logHistory: '540 student-hours, cobblestone & terminal grounds works', valueUSD: 1350, points: 1350, phone: '+252 63 402 0894', district: 'Yagoori', status: 'Pending Verification', dateRegistered: '2026-03-10' },
-];
+/* Volunteers and attendance now live in the backend's Postgres database
+ * (see backend/). These arrays are populated by loadVolunteers()/
+ * loadAttendance() below and kept in sync with the server after every
+ * registration, verification, and attendance mark. */
+let volunteers = [];
+let attendance = [];
 
-let volunteers = loadJSON(STORAGE_KEYS.volunteers, SEED_VOLUNTEERS);
-function persistVolunteers() { saveJSON(STORAGE_KEYS.volunteers, volunteers); }
+async function loadVolunteers() {
+  volunteers = await apiFetch('/api/volunteers');
+}
 
-let attendance = loadJSON(STORAGE_KEYS.attendance, []);
-function persistAttendance() { saveJSON(STORAGE_KEYS.attendance, attendance); }
+async function loadAttendance() {
+  attendance = await apiFetch('/api/attendance');
+}
 
 const FLEET = [
   { id: 'BUS-004', type: 'Grader', project: 'Kalabaydh Corridor', hobbsHrs: 612.4, status: 'Active' },
@@ -1007,7 +1050,7 @@ setActiveTab('townhall');
 
   const categoryChips = document.getElementById('categoryChips');
   let categoryFilter = 'all';
-  let selectedId = volunteers[0].id;
+  let selectedId = volunteers[0] && volunteers[0].id;
   let search = '';
 
   const allBtn = document.createElement('button');
@@ -1098,10 +1141,17 @@ setActiveTab('townhall');
     `;
     const verifyBtn = document.getElementById('verifyBtn');
     if (verifyBtn) {
-      verifyBtn.addEventListener('click', () => {
-        selected.status = 'Verified';
-        persistVolunteers();
-        render();
+      verifyBtn.addEventListener('click', async () => {
+        verifyBtn.disabled = true;
+        try {
+          const updated = await apiFetch('/api/volunteers/' + encodeURIComponent(selected.id) + '/verify', { method: 'PATCH' });
+          selected.status = updated.status;
+          render();
+          refreshAll();
+        } catch (err) {
+          alert('Could not verify this registration: ' + err.message);
+          verifyBtn.disabled = false;
+        }
       });
     }
   }
@@ -1140,34 +1190,37 @@ setActiveTab('townhall');
   document.getElementById('modalCloseBtn').addEventListener('click', closeIntakeModal);
   document.getElementById('intakeModal').addEventListener('click', e => { if (e.target.id === 'intakeModal') closeIntakeModal(); });
 
-  document.getElementById('intakeForm').addEventListener('submit', e => {
+  document.getElementById('intakeForm').addEventListener('submit', async e => {
     e.preventDefault();
     const name = document.getElementById('fName').value.trim();
     if (!name) return;
-    const qty = Number(fQty.value) || 0;
-    const unitValue = Number(fUnitValue.value) || 0;
-    const est = qty * unitValue;
-    const newId = 'VGIS-LS-2026-' + Math.floor(1000 + Math.random() * 8999);
-    const category = fCategory.value;
-    const modality = fModality.value;
-    volunteers.unshift({
-      id: newId, name, category,
-      entityType: CATEGORIES.find(c => c.id === category).label,
-      modality,
-      logHistory: 'Self-registered: ' + qty + ' ' + (modality === 'Labor' || modality === 'Expert Advisory' ? 'hrs' : 'units') + ' pending field verification',
-      valueUSD: est, points: est,
-      phone: fPhone.value.trim(),
-      district: fDistrict.value,
-      status: 'Pending Verification',
-      dateRegistered: todayStr(),
-    });
-    persistVolunteers();
-    selectedId = newId;
-    e.target.reset();
-    updateEstimate();
-    closeIntakeModal();
-    render();
-    refreshAll();
+    const submitBtn = e.target.querySelector('button[type=submit]');
+    submitBtn.disabled = true;
+    try {
+      const newVolunteer = await apiFetch('/api/volunteers', {
+        method: 'POST',
+        body: JSON.stringify({
+          name,
+          category: fCategory.value,
+          modality: fModality.value,
+          quantity: Number(fQty.value) || 0,
+          unitValue: Number(fUnitValue.value) || 0,
+          phone: fPhone.value.trim(),
+          district: fDistrict.value,
+        }),
+      });
+      volunteers.unshift(newVolunteer);
+      selectedId = newVolunteer.id;
+      e.target.reset();
+      updateEstimate();
+      closeIntakeModal();
+      render();
+      refreshAll();
+    } catch (err) {
+      alert('Could not submit this registration: ' + err.message);
+    } finally {
+      submitBtn.disabled = false;
+    }
   });
 
   registerRefresh('registry', render);
@@ -1208,19 +1261,26 @@ setActiveTab('townhall');
     return attendance.find(a => a.volunteerId === volunteerId && a.date === todayStr());
   }
 
-  function markAttendance(volunteerId, volunteerName, status) {
+  async function markAttendance(volunteerId, volunteerName, status, btn) {
     if (!isAdmin()) return;
-    const existing = todayRecord(volunteerId);
-    const time = new Date().toLocaleTimeString();
-    if (existing) {
-      existing.status = status;
-      existing.time = time;
-      existing.markedBy = adminSession.name;
-    } else {
-      attendance.unshift({ id: Date.now() + '-' + volunteerId, volunteerId, volunteerName, date: todayStr(), status, time, markedBy: adminSession.name });
+    if (btn) btn.disabled = true;
+    try {
+      const record = await apiFetch('/api/attendance', {
+        method: 'POST',
+        body: JSON.stringify({ volunteerId, status }),
+      });
+      const existing = todayRecord(volunteerId);
+      if (existing) {
+        Object.assign(existing, record);
+      } else {
+        attendance.unshift(record);
+      }
+      render();
+    } catch (err) {
+      alert('Could not mark attendance: ' + err.message);
+    } finally {
+      if (btn) btn.disabled = false;
     }
-    persistAttendance();
-    render();
   }
 
   function renderStats() {
@@ -1264,7 +1324,7 @@ setActiveTab('townhall');
     body.querySelectorAll('.mark-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         const v = volunteers.find(x => x.id === btn.dataset.id);
-        if (v) markAttendance(v.id, v.name, btn.dataset.status);
+        if (v) markAttendance(v.id, v.name, btn.dataset.status, btn);
       });
     });
   }
@@ -1614,6 +1674,17 @@ setActiveTab('townhall');
       </div>
     `).join('');
   });
+})();
+
+/* ================= Bootstrap: load live data from the backend ================= */
+(async function bootstrap() {
+  try {
+    await Promise.all([restoreSession(), loadVolunteers(), loadAttendance()]);
+    hideApiBanner();
+  } catch (err) {
+    showApiBanner('⚠ ' + err.message);
+  }
+  refreshAll();
 })();
 </script>
 </body>
